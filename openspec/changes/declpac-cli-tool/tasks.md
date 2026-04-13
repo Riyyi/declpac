@@ -1,8 +1,9 @@
 ## 1. Project Setup
 
 - [ ] 1.1 Initialize Go module with proper imports
-- [ ] 1.2 Add required dependencies (libalpm wrapper)
-- [ ] 1.3 Set up project structure (main.go, pkg/ subdirectory)
+- [ ] 1.2 Add required dependencies (dyalpm wrapper, Jguer/aur)
+- [ ] 1.3 Set up project structure (cmd/declpac/main.go, pkg/ subdirectory)
+- [ ] 1.4 Add libalpm initialization and handle
 
 ## 2. Input Parsing
 
@@ -22,16 +23,24 @@
 - [ ] 4.1 Implement empty state detection (no packages found)
 - [ ] 4.2 Add stderr error output for empty state
 - [ ] 4.3 Set exit code 1 for empty state case (abort, not proceed)
+- [ ] 4.4 Check pacman DB freshness (db.lock timestamp)
+- [ ] 4.5 Run pacman -Syy if DB older than 1 day
+- [ ] 4.6 Validate packages via libalpm (pacman repos)
+- [ ] 4.7 Validate packages via Jguer/aur (AUR)
+- [ ] 4.8 Fail fast with error if package not found
 
-## 5. Pacman Integration
+## 5. Pacman Integration (Hybrid: query via libalpm, modify via exec)
 
-- [ ] 5.1 Implement pacman -Syu command execution wrapper
-- [ ] 5.2 Add command-line argument construction with package list
-- [ ] 5.3 Capture pacman stdout and stderr output
-- [ ] 5.4 Implement pacman error message parsing
-- [ ] 5.5 Handle pacman exit codes for success/failure detection
-- [ ] 5.6 Verify pacman automatically resolves transitive dependencies
-- [ ] 5.7 Verify shared dependencies are deduplicated by pacman
+- [ ] 5.1 Initialize libalpm handle for queries
+- [ ] 5.2 Implement libalpm query for installed packages
+- [ ] 5.3 Implement libalpm query for available packages
+- [ ] 5.4 Implement pacman -Syy command execution (DB refresh)
+- [ ] 5.5 Implement pacman -Syu command execution wrapper
+- [ ] 5.6 Add command-line argument construction with package list
+- [ ] 5.7 Capture pacman stdout and stderr output
+- [ ] 5.8 Implement pacman error message parsing
+- [ ] 5.9 Handle pacman exit codes for success/failure detection
+- [ ] 5.10 Verify pacman automatically resolves transitive dependencies
 
 ## 6. Explicit Marking & Orphan Cleanup
 
@@ -44,20 +53,25 @@
 
 ## 7. AUR Integration
 
-- [ ] 7.1 Implement AUR package lookup via package query (Jguer/aur)
-- [ ] 7.2 Add pacman first attempt (package not in repos)
-- [ ] 7.3 Implement AUR fallback using makepkg (direct build, not AUR helper)
-- [ ] 7.4 Clone AUR package git repo to temp directory
-- [ ] 7.5 Run makepkg -si in temp directory for installation
-- [ ] 7.6 Add stderr error reporting for packages not in pacman or AUR
-- [ ] 7.7 Capture makepkg stdout and stderr for output parsing
-- [ ] 7.8 Handle makepkg exit codes for success/failure detection
+- [ ] 7.1 Implement AUR package lookup via Jguer/aur library
+- [ ] 7.2 Check package not in pacman repos first (via libalpm)
+- [ ] 7.3 Query AUR for missing packages
+- [ ] 7.4 Implement AUR fallback using makepkg (direct build, not AUR helper)
+- [ ] 7.5 Clone AUR package git repo to temp directory
+- [ ] 7.6 Run makepkg -si in temp directory for installation
+- [ ] 7.7 Upgrade existing AUR packages to latest (makepkg rebuild)
+- [ ] 7.8 Add stderr error reporting for packages not in pacman or AUR
+- [ ] 7.9 Capture makepkg stdout and stderr for output parsing
+- [ ] 7.10 Handle makepkg exit codes for success/failure detection
 
 ## 8. Output Generation
 
-- [ ] 8.1 Capture installed/removed package counts from pacman output
-- [ ] 8.2 Generate machine-readable output line in requested format
-- [ ] 8.3 Include error details in output on failure
+- [ ] 8.1 Parse pacman output for installed package count
+- [ ] 8.2 Parse pacman output for removed package count (orphan cleanup)
+- [ ] 8.3 Generate output: `Installed X packages, removed Y packages`
+- [ ] 8.4 Handle 0 packages case: `Installed 0 packages, removed 0 packages`
+- [ ] 8.5 Print errors to stderr
+- [ ] 8.6 Set exit code 0 for success, 1 for errors
 
 ## 9. CLI Interface
 

@@ -1,17 +1,28 @@
 ## ADDED Requirements
 
-### Requirement: Can detect empty state input
+### Requirement: Validate package names exist in pacman or AUR
 
-The system SHALL detect when no packages are provided in any input source.
+The system SHALL validate that all declared packages exist in pacman
+repositories or AUR before attempting to sync.
 
-#### Scenario: Empty state warning
+#### Scenario: Empty state detection
 - **WHEN** no package names are found in stdin or state files
-- **THEN** system shall print a warning to stderr
+- **THEN** print error to stderr: `empty state input`
+- **AND** exit with code 1
 
-#### Scenario: Empty state warning message
-- **WHEN** warning is printed for empty state
-- **THEN** message shall say: "Called without state, aborting.."
+#### Scenario: Validate package in pacman repos
+- **WHEN** package exists in pacman repositories
+- **THEN** validation passes
 
-#### Scenario: Abort on empty state
-- **WHEN** empty state is detected
-- **THEN** system shall exit with code 1 (error: no packages to sync)
+#### Scenario: Validate package in AUR
+- **WHEN** package not in pacman repos but exists in AUR
+- **THEN** validation passes
+
+#### Scenario: Package not found
+- **WHEN** package not in pacman repos or AUR
+- **THEN** print error to stderr with package name
+- **AND** exit with code 1
+
+#### Scenario: Database freshness check
+- **WHEN** pacman database last sync was more than 1 day ago
+- **THEN** run pacman -Syy to refresh before validation

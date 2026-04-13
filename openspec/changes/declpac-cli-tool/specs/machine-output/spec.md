@@ -1,21 +1,30 @@
 ## ADDED Requirements
 
-### Requirement: Can generate machine-readable output
+### Requirement: Generate consistent output format
 
-The system SHALL produce output suitable for automated scripting.
+The system SHALL produce console output suitable for logging and scripting.
 
-#### Scenario: Install/remove count output
-- **WHEN** sync completes successfully
-- **THEN** system shall output: "<installed_count> package(s) installed, <removed_count> package(s) removed"
+#### Scenario: Successful sync with changes
+- **WHEN** sync completes with packages installed or removed
+- **THEN** print to stdout: `Installed X packages, removed Y packages`
+- **AND** exit with code 0
 
-#### Scenario: Empty output format
-- **WHEN** no packages to sync
-- **THEN** system shall output nothing (or indicate no changes)
+#### Scenario: No changes needed
+- **WHEN** all packages already match declared state
+- **THEN** print to stdout: `Installed 0 packages, removed 0 packages`
+- **AND** exit with code 0
 
-#### Scenario: Error details in output
-- **WHEN** pacman operation fails
-- **THEN** system shall include error details in output (package names, pacman error messages)
+#### Scenario: Error during sync
+- **WHEN** pacman or makepkg operation fails
+- **THEN** print error to stderr with details
+- **AND** exit with code 1
 
-#### Scenario: Exit code for scripting
-- **WHEN** sync completes
-- **THEN** system shall return exit code 0 for success, non-zero for errors
+#### Scenario: Validation failure
+- **WHEN** package validation fails (package not in pacman or AUR)
+- **THEN** print error to stderr with package name
+- **AND** exit with code 1
+
+#### Scenario: Empty state input
+- **WHEN** no packages provided from stdin or state files
+- **THEN** print error to stderr: `empty state input`
+- **AND** exit with code 1

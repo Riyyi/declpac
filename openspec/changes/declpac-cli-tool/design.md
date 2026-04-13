@@ -38,18 +38,35 @@ package list, with all packages at their latest available versions.
 **Input Parsing Approach**
 - Parse whitespace, tabs, newlines for package names
 - Support multiple --state files: all additive including with stdin
-- Validate package names against pacman available packages (optional validation)
 - Empty state detection: print error to stderr and exit with code 1 (abort)
+
+**Package Database Freshness**
+- Use libalpm (dyalpm) to check last sync time from /var/lib/pacman/db.lock timestamp
+- If database older than 1 day, run `pacman -Syy` to refresh before validation
+- Refresh happens before validation and sync operations
+
+**Package Validation**
+- Validate all declared packages exist in pacman repos or AUR before sync
+- Use libalpm (dyalpm) for pacman repo queries (fast local DB access)
+- Use Jguer/aur library for AUR queries
+- Fail fast with clear error if any package not found
+- Let pacman report detailed errors during sync (don't duplicate validation)
 
 **State Merging Logic**
 - All inputs are additive: combine all packages from stdin and all state files
 - No conflict resolution: missing packages are added, duplicates accumulate
 - Order-independent: inputs don't override each other
 
-**Pacman Interaction**
-- Use os/exec.Command to run pacman with -Sy (sync databases) and -S flag
-- Run pacman -Syu with all target packages to ensure full upgrade
-- Capture stderr/stdout for error reporting and machine output
+**Hybrid Query/Modify Approach**
+- **Query operations**: Use libalpm (dyalpm) for fast local package database access
+  - Query installed packages, available packages, package details
+  - Check database freshness (last sync time)
+- **Modify operations**: Use os/exec.Command to run pacman commands
+  - pacman -Syy: Refresh package databases
+  - pacman -Syu: Install/upgrade packages (full upgrade)
+  - pacman -D --explicit: Mark packages as explicitly installed
+  - pacman -Rns: Remove orphaned packages
+- Capture stderr/stdout for error reporting and output generation
 - Detect pacman exit codes and translate to tool exit codes
 
 **Error Handling Strategy**
@@ -59,11 +76,13 @@ package list, with all packages at their latest available versions.
 - Include error details in output for scripting purposes
 
 **AUR Integration**
-- For packages not found in pacman repositories, check if available in AUR
-- Use makepkg directly to build and install AUR packages (no AUR helpers)
+- First attempt: Try pacman -Syu for all packages (includes AUR auto-install if enabled)
+- For packages not found in pacman repos: Check AUR via Jguer/aur library
+- If package in AUR: Build and install with makepkg (no AUR helpers)
+- AUR packages should also upgrade to latest version (no partial updates)
 - Clone AUR git repo to temp directory
 - Run `makepkg -si` in temp directory for installation
-- Capture stdout/stderr for output and error handling
+- Capture stdout/stderr for output parsing
 - Report error to stderr if package not found in pacman or AUR
 
 **Dependency Resolution**
@@ -86,6 +105,18 @@ package list, with all packages at their latest available versions.
 - Pacman handles version selection automatically, ensuring latest versions
 - No semantic version comparison or pinning logic required
 
+**CLI Interface**
+- Usage: `declpac --state file1.txt --state file2.txt < stdin`
+- Multiple --state flags allowed, all additive
+- Stdin input via standard input stream
+- No interactive prompts - fully automated
+
+**Output Format**
+- Success: Print to stdout: `Installed X packages, removed Y packages`
+- No changes: Print `Installed 0 packages, removed 0 packages`
+- Errors: Print error message to stderr
+- Exit codes: 0 for success, 1 for errors
+
 ## Risks / Trade-offs
 
 **Known Risks:**
@@ -99,6 +130,10 @@ package list, with all packages at their latest available versions.
   design choice; pacman handles duplicates gracefully
 - [Dependency conflicts could occur] → Mitigation: Let pacman handle standard
   conflicts; tool won't implement complex dependency resolution
+- [libalpm integration complexity] → Mitigation: Use dyalpm wrapper library;
+  validate queries work before build
+- [AUR package build failures] → Mitigation: Capture makepkg output, report errors
+  to stderr; don't retry
 
 **Trade-offs:**
 - No conflict resolution: simpler merging but may include packages the system
