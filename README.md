@@ -72,6 +72,7 @@ bash          # bash
 |------|-------|-------------|
 | `--state` | `-s` | State file(s) to read package list from (can be used multiple times) |
 | `--yes` | `-y` | Skip confirmation prompts (for scripting) |
+| `--dry-run` | | Simulate sync without making changes |
 | `--help` | `-h` | Show help message |
 
 ### Examples
@@ -112,6 +113,18 @@ sudo declpac --state ~/.config/declpac/base.txt --state ~/.config/declpac/deskto
 
 # Or use stdin
 cat ~/.config/declpac/full-system.txt | sudo declpac
+```
+
+#### Dry-Run Preview
+
+```bash
+# Preview what would happen without making changes
+sudo declpac --dry-run --state packages.txt
+
+# Example output:
+# Installed 3 packages, removed 2 packages
+# Would install: vim, git, docker
+# Would remove: python2, perl-xml-parser
 ```
 
 ## How It Works

@@ -77,7 +77,7 @@ package list, with all packages at their latest available versions.
 
 **AUR Integration**
 - First attempt: Try pacman -Syu for all packages (includes AUR auto-install if enabled)
-- For packages not found in pacman repos: Check AUR via Jguer/aur library
+- For packages not found in pacman repos: Batch query AUR via info endpoint (single HTTP request for multiple packages)
 - If package in AUR: Build and install with makepkg (no AUR helpers)
 - AUR packages should also upgrade to latest version (no partial updates)
 - Clone AUR git repo to temp directory
@@ -110,10 +110,12 @@ package list, with all packages at their latest available versions.
 - Multiple --state flags allowed, all additive
 - Stdin input via standard input stream
 - No interactive prompts - fully automated
+- `--dry-run`: Simulate sync without making changes, print what would be installed/removed
 
 **Output Format**
 - Success: Print to stdout: `Installed X packages, removed Y packages`
 - No changes: Print `Installed 0 packages, removed 0 packages`
+- Dry-run: Print `Installed X packages, removed Y packages` with `Would install: ...` and `Would remove: ...` lines
 - Errors: Print error message to stderr
 - Exit codes: 0 for success, 1 for errors
 

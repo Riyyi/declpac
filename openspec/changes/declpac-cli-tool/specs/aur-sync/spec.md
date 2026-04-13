@@ -12,7 +12,7 @@ latest versions.
 
 #### Scenario: Fall back to AUR
 - **WHEN** package is not in pacman repositories but is in AUR
-- **THEN** query AUR via Jguer/aur library
+- **THEN** batch query AUR via info endpoint (multiple packages in single request)
 - **AND** build and install with makepkg -si
 
 #### Scenario: Upgrade AUR packages

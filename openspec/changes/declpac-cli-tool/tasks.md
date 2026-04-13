@@ -93,3 +93,12 @@
 - [x] 10.9 Test AUR fallback with makepkg for AUR package
 - [x] 10.10 Test error handling for missing packages
 - [x] 10.11 Generate final binary
+
+## 11. Dry-Run Mode
+
+- [x] 11.1 Add --dry-run flag to CLI argument parsing
+- [x] 11.2 Implement DryRun function to query current state
+- [x] 11.3 Compare declared packages to current installations
+- [x] 11.4 Identify packages to install (not currently installed)
+- [x] 11.5 Identify orphans to remove via pacman -Qdtq
+- [x] 11.6 Output "Would install:" and "Would remove:" sections

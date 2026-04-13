@@ -17,6 +17,7 @@ import (
 type Config struct {
 	StateFiles []string
 	NoConfirm  bool
+	DryRun     bool
 }
 
 func main() {
@@ -37,6 +38,11 @@ func main() {
 				Aliases:     []string{"y"},
 				Usage:       "Skip confirmation prompts",
 				Destination: &cfg.NoConfirm,
+			},
+			&cli.BoolFlag{
+				Name:        "dry-run",
+				Usage:       "Simulate the sync without making changes",
+				Destination: &cfg.DryRun,
 			},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
@@ -61,6 +67,16 @@ func run(cfg *Config) error {
 	if err := validation.Validate(merged); err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		return err
+	}
+
+	if cfg.DryRun {
+		result, err := pacman.DryRun(merged)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "error: %v\n", err)
+			return err
+		}
+		fmt.Println(output.Format(result))
+		return nil
 	}
 
 	result, err := pacman.Sync(merged)

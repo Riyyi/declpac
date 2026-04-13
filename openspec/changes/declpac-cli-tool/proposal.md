@@ -19,6 +19,7 @@ list, ensuring all packages are at the latest version.
 - Machine-readable output (install/remove counts, exit codes)
 - No conflict resolution for missing packages (append-only)
 - Print error to stderr for empty state input and exit with code 1
+- Dry-run mode: simulate sync without making changes, show what would be installed/removed
 
 ## Capabilities
 
