@@ -1,0 +1,6 @@
+github.com/Jguer/aur v1.3.0 h1:skdjp/P9kB75TBaJmn9PKK/kCeA9QsgjdUrORZ3gldU=
+github.com/Jguer/aur v1.3.0/go.mod h1:F8Awo+WKzTxlXtNOO4pDQjMkePLZ+oMSbu+1fKLTTLo=
+github.com/Jguer/dyalpm v0.1.2 h1:Gl0+GDWBQmo3DSsfzTPnKqCwYqcroq0j6kAtsIUkpUw=
+github.com/Jguer/dyalpm v0.1.2/go.mod h1:FpcWwU1eYHVWMKmr/yHFqHYKsS+qGKCtk/FIXirj2MY=
+github.com/ebitengine/purego v0.10.0 h1:QIw4xfpWT6GWTzaW5XEKy3HXoqrJGx1ijYHzTF0/ISU=
+github.com/ebitengine/purego v0.10.0/go.mod h1:iIjxzd6CiRiOG0UyXP+V1+jWqUXVjPKLAI0mRfJZTmQ=
