@@ -1,7 +1,18 @@
+---
+
 schema: spec-driven
 
 context: |
-  Tech stack: Go
+  - Tech stack: Go
+  - Minimal external dependencies
+  - Use Jguer/dyalpm for interfacing with libalpm
+  - Use Jguer/aur for interfacing with the AUR API
+
+rules:
+  style-guide: |
+    - Favor creating and using helper library functions over local on-offs
+    - When writing non-code documents, strictly adhere to the 80 character line
+      limit
 
 # Project context (optional)
 # This is shown to AI when creating artifacts.
