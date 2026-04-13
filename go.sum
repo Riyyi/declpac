@@ -4,3 +4,5 @@ github.com/Jguer/dyalpm v0.1.2 h1:Gl0+GDWBQmo3DSsfzTPnKqCwYqcroq0j6kAtsIUkpUw=
 github.com/Jguer/dyalpm v0.1.2/go.mod h1:FpcWwU1eYHVWMKmr/yHFqHYKsS+qGKCtk/FIXirj2MY=
 github.com/ebitengine/purego v0.10.0 h1:QIw4xfpWT6GWTzaW5XEKy3HXoqrJGx1ijYHzTF0/ISU=
 github.com/ebitengine/purego v0.10.0/go.mod h1:iIjxzd6CiRiOG0UyXP+V1+jWqUXVjPKLAI0mRfJZTmQ=
+github.com/urfave/cli/v3 v3.8.0 h1:XqKPrm0q4P0q5JpoclYoCAv0/MIvH/jZ2umzuf8pNTI=
+github.com/urfave/cli/v3 v3.8.0/go.mod h1:ysVLtOEmg2tOy6PknnYVhDoouyC/6N42TMeoMzskhso=

@@ -1,0 +1,74 @@
+package main
+
+import (
+	"context"
+	"fmt"
+	"os"
+
+	"github.com/urfave/cli/v3"
+
+	"github.com/Riyyi/declpac/pkg/input"
+	"github.com/Riyyi/declpac/pkg/merge"
+	"github.com/Riyyi/declpac/pkg/output"
+	"github.com/Riyyi/declpac/pkg/pacman"
+	"github.com/Riyyi/declpac/pkg/validation"
+)
+
+type Config struct {
+	StateFiles []string
+	NoConfirm  bool
+}
+
+func main() {
+	cfg := &Config{}
+
+	cmd := &cli.Command{
+		Name:  "declpac",
+		Usage: "Declarative pacman package manager",
+		Flags: []cli.Flag{
+			&cli.StringSliceFlag{
+				Name:        "state",
+				Aliases:     []string{"s"},
+				Usage:       "State file(s) to read package list from",
+				Destination: &cfg.StateFiles,
+			},
+			&cli.BoolFlag{
+				Name:        "yes",
+				Aliases:     []string{"y"},
+				Usage:       "Skip confirmation prompts",
+				Destination: &cfg.NoConfirm,
+			},
+		},
+		Action: func(ctx context.Context, cmd *cli.Command) error {
+			return run(cfg)
+		},
+	}
+
+	if err := cmd.Run(context.Background(), os.Args); err != nil {
+		os.Exit(1)
+	}
+}
+
+func run(cfg *Config) error {
+	packages, err := input.ReadPackages(cfg.StateFiles)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+		return err
+	}
+
+	merged := merge.Merge(packages)
+
+	if err := validation.Validate(merged); err != nil {
+		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+		return err
+	}
+
+	result, err := pacman.Sync(merged)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+		return err
+	}
+
+	fmt.Println(output.Format(result))
+	return nil
+}
