@@ -73,13 +73,7 @@ Make a git commit, distinguishing between user and AI contributions.
    ```
    (Uses git config for committer, but sets author to AI Bot)
 
-6. **Show result**
-
-   ```bash
-   git log -1 --oneline
-   ```
-
 **Output**
 
-- Show the commit hash and message
+- Tell user the commit was made
 - If AI commit, mention that the author was set to "AI Bot <ai@local>"
