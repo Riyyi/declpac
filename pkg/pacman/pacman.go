@@ -50,6 +50,14 @@ func New() (*Pac, error) {
 		return nil, fmt.Errorf("failed to get sync databases: %w", err)
 	}
 
+	if len(syncDBs) == 0 {
+		syncDBs, err = registerSyncDBs(handle)
+		if err != nil {
+			handle.Release()
+			return nil, fmt.Errorf("failed to register sync databases: %w", err)
+		}
+	}
+
 	fmt.Fprintf(os.Stderr, "[debug] New: done (%.2fs)\n", time.Since(start).Seconds())
 	return &Pac{
 		aurCache: make(map[string]AURPackage),
@@ -64,6 +72,33 @@ func (p *Pac) Close() error {
 		p.handle.Release()
 	}
 	return nil
+}
+
+func registerSyncDBs(handle dyalpm.Handle) ([]dyalpm.Database, error) {
+	fmt.Fprintf(os.Stderr, "[debug] registerSyncDBs: starting...\n")
+
+	repos := []string{"core", "extra", "multilib"}
+	var dbs []dyalpm.Database
+
+	for _, repo := range repos {
+		db, err := handle.RegisterSyncDB(repo, 0)
+		if err != nil {
+			continue
+		}
+
+		count := 0
+		db.PkgCache().ForEach(func(pkg dyalpm.Package) error {
+			count++
+			return nil
+		})
+
+		if count > 0 {
+			dbs = append(dbs, db)
+		}
+	}
+
+	fmt.Fprintf(os.Stderr, "[debug] registerSyncDBs: done (%d dbs)\n", len(dbs))
+	return dbs, nil
 }
 
 type PackageInfo struct {
