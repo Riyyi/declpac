@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/urfave/cli/v3"
 
@@ -56,17 +57,23 @@ func main() {
 }
 
 func run(cfg *Config) error {
+	start := time.Now()
+	fmt.Fprintf(os.Stderr, "[debug] run: starting...\n")
+
 	packages, err := input.ReadPackages(cfg.StateFiles)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		return err
 	}
+	fmt.Fprintf(os.Stderr, "[debug] run: packages read (%.2fs)\n", time.Since(start).Seconds())
 
 	merged := merge.Merge(packages)
 
-	if err := validation.Validate(merged); err != nil {
-		fmt.Fprintf(os.Stderr, "error: %v\n", err)
-		return err
+	if !cfg.DryRun {
+		if err := validation.CheckDBFreshness(); err != nil {
+			fmt.Fprintf(os.Stderr, "error: %v\n", err)
+			return err
+		}
 	}
 
 	if cfg.DryRun {
@@ -76,6 +83,7 @@ func run(cfg *Config) error {
 			return err
 		}
 		fmt.Println(output.Format(result))
+		fmt.Fprintf(os.Stderr, "[debug] run: dry-run done (%.2fs)\n", time.Since(start).Seconds())
 		return nil
 	}
 
@@ -86,5 +94,6 @@ func run(cfg *Config) error {
 	}
 
 	fmt.Println(output.Format(result))
+	fmt.Fprintf(os.Stderr, "[debug] run: sync done (%.2fs)\n", time.Since(start).Seconds())
 	return nil
 }

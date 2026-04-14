@@ -9,7 +9,7 @@ In dry-run mode, the system SHALL compute what WOULD happen without executing an
 
 #### Scenario: Dry-run lists packages to remove
 - **WHEN** dry-run is enabled and orphan packages exist
-- **THEN** the system SHALL NOT calculate or populate `Result.ToRemove` - orphan detection is skipped entirely in dry-run mode
+- **THEN** the system SHALL populate `Result.ToRemove` with the list of orphan packages and `Result.Removed` with the count
 
 #### Scenario: Dry-run skips pacman sync
 - **WHEN** dry-run is enabled
