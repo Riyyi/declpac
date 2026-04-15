@@ -188,6 +188,9 @@ func (f *Fetcher) Resolve(packages []string) (map[string]*PackageInfo, error) {
 	fmt.Fprintf(os.Stderr, "[debug] Resolve: starting...\n")
 
 	result := make(map[string]*PackageInfo)
+	for _, pkg := range packages {
+		result[pkg] = &PackageInfo{Name: pkg, Exists: true}
+	}
 
 	localPkgs, err := f.buildLocalPkgMap()
 	if err != nil {
@@ -215,44 +218,38 @@ func (f *Fetcher) Resolve(packages []string) (map[string]*PackageInfo, error) {
 		if err != nil {
 			return nil, err
 		}
-		fmt.Fprintf(os.Stderr, "[debug] Resolve: sync db checked (%.2fs)\n", time.Since(start).Seconds())
 
-		var notInSync []string
-		for _, pkg := range notInLocal {
-			if syncPkg, ok := syncPkgs[pkg]; ok {
-				result[pkg] = &PackageInfo{
-					Name:      pkg,
-					Exists:    true,
-					InAUR:     false,
-					Installed: false,
-					syncPkg:   syncPkg,
-				}
-			} else {
-				notInSync = append(notInSync, pkg)
+		f.ensureAURCache(packages)
+
+		for _, pkg := range packages {
+			info := result[pkg]
+			if info == nil {
+				continue
 			}
-		}
 
-		if len(notInSync) > 0 {
-			f.ensureAURCache(notInSync)
-			fmt.Fprintf(os.Stderr, "[debug] Resolve: AUR cache ensured (%.2fs)\n", time.Since(start).Seconds())
-
-			var unfound []string
-			for _, pkg := range notInSync {
+			if info.Installed {
 				if aurInfo, ok := f.aurCache[pkg]; ok {
-					result[pkg] = &PackageInfo{
-						Name:      pkg,
-						Exists:    true,
-						InAUR:     true,
-						Installed: false,
-						AURInfo:   &aurInfo,
-					}
-				} else {
-					unfound = append(unfound, pkg)
+					info.InAUR = true
+					info.AURInfo = &aurInfo
 				}
+				continue
 			}
-			if len(unfound) > 0 {
-				return nil, fmt.Errorf("package(s) not found: %s", strings.Join(unfound, ", "))
+
+			if syncPkg, ok := syncPkgs[pkg]; ok {
+				info.InAUR = false
+				info.Installed = false
+				info.syncPkg = syncPkg
+				continue
 			}
+
+			if aurInfo, ok := f.aurCache[pkg]; ok {
+				info.InAUR = true
+				info.Installed = false
+				info.AURInfo = &aurInfo
+				continue
+			}
+
+			return nil, fmt.Errorf("package not found: %s", pkg)
 		}
 	}
 

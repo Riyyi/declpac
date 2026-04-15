@@ -200,7 +200,7 @@ func SyncPackages(packages []string) (int, error) {
 	start := time.Now()
 	fmt.Fprintf(os.Stderr, "[debug] SyncPackages: starting...\n")
 
-	args := append([]string{"-Syu"}, packages...)
+	args := append([]string{"-S", "--needed"}, packages...)
 	cmd := exec.Command("pacman", args...)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
@@ -271,12 +271,10 @@ func DryRun(packages []string) (*output.Result, error) {
 		if info == nil || !info.Exists {
 			return nil, fmt.Errorf("package not found: %s", pkg)
 		}
-		if _, installed := localPkgs[pkg]; !installed {
-			if info.InAUR {
-				aurPkgs = append(aurPkgs, pkg)
-			} else {
-				toInstall = append(toInstall, pkg)
-			}
+		if info.InAUR {
+			aurPkgs = append(aurPkgs, pkg)
+		} else if _, installed := localPkgs[pkg]; !installed {
+			toInstall = append(toInstall, pkg)
 		}
 	}
 	fmt.Fprintf(os.Stderr, "[debug] DryRun: packages categorized (%.2fs)\n", time.Since(start).Seconds())
