@@ -36,12 +36,6 @@ func main() {
 				Destination: &cfg.StateFiles,
 			},
 			&cli.BoolFlag{
-				Name:        "yes",
-				Aliases:     []string{"y"},
-				Usage:       "Skip confirmation prompts",
-				Destination: &cfg.NoConfirm,
-			},
-			&cli.BoolFlag{
 				Name:        "dry-run",
 				Usage:       "Simulate the sync without making changes",
 				Destination: &cfg.DryRun,
