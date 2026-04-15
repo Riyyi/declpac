@@ -12,6 +12,7 @@ import (
 	"github.com/Riyyi/declpac/pkg/merge"
 	"github.com/Riyyi/declpac/pkg/output"
 	"github.com/Riyyi/declpac/pkg/pacman"
+	"github.com/Riyyi/declpac/pkg/state"
 	"github.com/Riyyi/declpac/pkg/validation"
 )
 
@@ -57,6 +58,12 @@ func main() {
 }
 
 func run(cfg *Config) error {
+	if err := state.OpenLog(); err != nil {
+		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+		return err
+	}
+	defer state.Close()
+
 	start := time.Now()
 	fmt.Fprintf(os.Stderr, "[debug] run: starting...\n")
 

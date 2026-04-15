@@ -2,6 +2,7 @@ package pacman
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"regexp"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/Riyyi/declpac/pkg/fetch"
 	"github.com/Riyyi/declpac/pkg/output"
+	"github.com/Riyyi/declpac/pkg/state"
 	"github.com/Riyyi/declpac/pkg/validation"
 )
 
@@ -18,9 +20,13 @@ func MarkAllAsDeps() error {
 	fmt.Fprintf(os.Stderr, "[debug] MarkAllAsDeps: starting...\n")
 
 	cmd := exec.Command("pacman", "-D", "--asdeps")
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	state.Write([]byte("MarkAllAsDeps...\n"))
+	cmd.Stdout = io.MultiWriter(os.Stdout, state.GetLogWriter())
+	cmd.Stderr = io.MultiWriter(os.Stderr, state.GetLogWriter())
 	err := cmd.Run()
+	if err != nil {
+		state.Write([]byte(fmt.Sprintf("error: %v\n", err)))
+	}
 
 	fmt.Fprintf(os.Stderr, "[debug] MarkAllAsDeps: done (%.2fs)\n", time.Since(start).Seconds())
 	return err
@@ -35,9 +41,13 @@ func MarkAsExplicit(packages []string) error {
 
 	args := append([]string{"-D", "--asexplicit"}, packages...)
 	cmd := exec.Command("pacman", args...)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	state.Write([]byte("MarkAsExplicit...\n"))
+	cmd.Stdout = io.MultiWriter(os.Stdout, state.GetLogWriter())
+	cmd.Stderr = io.MultiWriter(os.Stderr, state.GetLogWriter())
 	err := cmd.Run()
+	if err != nil {
+		state.Write([]byte(fmt.Sprintf("error: %v\n", err)))
+	}
 
 	fmt.Fprintf(os.Stderr, "[debug] MarkAsExplicit: done (%.2fs)\n", time.Since(start).Seconds())
 	return err
@@ -157,19 +167,25 @@ func InstallAUR(f *fetch.Fetcher, pkgName string) error {
 	defer os.RemoveAll(tmpDir)
 
 	cloneURL := "https://aur.archlinux.org/" + aurInfo.PackageBase + ".git"
+	state.Write([]byte("Cloning " + cloneURL + "\n"))
 	cloneCmd := exec.Command("git", "clone", cloneURL, tmpDir)
-	cloneCmd.Stdout = os.Stdout
-	cloneCmd.Stderr = os.Stderr
+	cloneCmd.Stdout = io.MultiWriter(os.Stdout, state.GetLogWriter())
+	cloneCmd.Stderr = io.MultiWriter(os.Stderr, state.GetLogWriter())
 	if err := cloneCmd.Run(); err != nil {
+		errMsg := fmt.Sprintf("failed to clone AUR repo: %w\n", err)
+		state.Write([]byte("error: " + errMsg))
 		return fmt.Errorf("failed to clone AUR repo: %w", err)
 	}
 	fmt.Fprintf(os.Stderr, "[debug] InstallAUR: cloned (%.2fs)\n", time.Since(start).Seconds())
 
+	state.Write([]byte("Building package...\n"))
 	makepkgCmd := exec.Command("makepkg", "-si", "--noconfirm")
-	makepkgCmd.Stdout = os.Stdout
-	makepkgCmd.Stderr = os.Stderr
+	makepkgCmd.Stdout = io.MultiWriter(os.Stdout, state.GetLogWriter())
+	makepkgCmd.Stderr = io.MultiWriter(os.Stderr, state.GetLogWriter())
 	makepkgCmd.Dir = tmpDir
 	if err := makepkgCmd.Run(); err != nil {
+		errMsg := fmt.Sprintf("makepkg failed to build AUR package: %w\n", err)
+		state.Write([]byte("error: " + errMsg))
 		return fmt.Errorf("makepkg failed to build AUR package: %w", err)
 	}
 	fmt.Fprintf(os.Stderr, "[debug] InstallAUR: built (%.2fs)\n", time.Since(start).Seconds())
@@ -204,7 +220,13 @@ func SyncPackages(packages []string) (int, error) {
 	cmd := exec.Command("pacman", args...)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
+		errMsg := fmt.Sprintf("pacman sync failed: %s", output)
+		state.Write([]byte(errMsg))
 		return 0, fmt.Errorf("pacman sync failed: %s", output)
+	}
+
+	if len(output) > 0 {
+		state.Write(output)
 	}
 
 	re := regexp.MustCompile(`upgrading (\S+)`)
@@ -233,7 +255,13 @@ func CleanupOrphans() (int, error) {
 	removeCmd := exec.Command("pacman", "-Rns")
 	output, err := removeCmd.CombinedOutput()
 	if err != nil {
+		errMsg := fmt.Sprintf("%s: %s", err, output)
+		state.Write([]byte(errMsg))
 		return 0, fmt.Errorf("%s: %s", err, output)
+	}
+
+	if len(output) > 0 {
+		state.Write(output)
 	}
 
 	count := len(orphans)
