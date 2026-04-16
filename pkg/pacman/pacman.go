@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
@@ -160,15 +161,24 @@ func InstallAUR(f *fetch.Fetcher, pkgName string) error {
 		return fmt.Errorf("AUR package not found in cache: %s", pkgName)
 	}
 
-	tmpDir, err := os.MkdirTemp("", "declpac-aur-")
-	if err != nil {
+	sudoUser := os.Getenv("SUDO_USER")
+	if sudoUser == "" {
+		sudoUser = os.Getenv("USER")
+		if sudoUser == "" {
+			sudoUser = "root"
+		}
+	}
+
+	tmpDir := "/tmp/declpac-aur-" + pkgName
+	mkdirCmd := exec.Command("su", "-", sudoUser, "-c", "rm -rf "+tmpDir+" && mkdir -p "+tmpDir)
+	if err := mkdirCmd.Run(); err != nil {
 		return fmt.Errorf("failed to create temp directory: %w", err)
 	}
 	defer os.RemoveAll(tmpDir)
 
 	cloneURL := "https://aur.archlinux.org/" + aurInfo.PackageBase + ".git"
 	state.Write([]byte("Cloning " + cloneURL + "\n"))
-	cloneCmd := exec.Command("git", "clone", cloneURL, tmpDir)
+	cloneCmd := exec.Command("su", "-", sudoUser, "-c", "git clone "+cloneURL+" "+tmpDir)
 	cloneCmd.Stdout = io.MultiWriter(os.Stdout, state.GetLogWriter())
 	cloneCmd.Stderr = io.MultiWriter(os.Stderr, state.GetLogWriter())
 	if err := cloneCmd.Run(); err != nil {
@@ -179,10 +189,9 @@ func InstallAUR(f *fetch.Fetcher, pkgName string) error {
 	fmt.Fprintf(os.Stderr, "[debug] InstallAUR: cloned (%.2fs)\n", time.Since(start).Seconds())
 
 	state.Write([]byte("Building package...\n"))
-	makepkgCmd := exec.Command("makepkg", "-si", "--noconfirm")
+	makepkgCmd := exec.Command("su", "-", sudoUser, "-c", "cd "+tmpDir+" && makepkg -s --noconfirm")
 	makepkgCmd.Stdout = io.MultiWriter(os.Stdout, state.GetLogWriter())
 	makepkgCmd.Stderr = io.MultiWriter(os.Stderr, state.GetLogWriter())
-	makepkgCmd.Dir = tmpDir
 	if err := makepkgCmd.Run(); err != nil {
 		errMsg := fmt.Sprintf("makepkg failed to build AUR package: %v\n", err)
 		state.Write([]byte("error: " + errMsg))
@@ -190,8 +199,38 @@ func InstallAUR(f *fetch.Fetcher, pkgName string) error {
 	}
 	fmt.Fprintf(os.Stderr, "[debug] InstallAUR: built (%.2fs)\n", time.Since(start).Seconds())
 
+	pkgFile, err := findPKGFile(tmpDir)
+	if err != nil {
+		return fmt.Errorf("failed to find built package: %w", err)
+	}
+
+	state.Write([]byte("Installing package...\n"))
+	installCmd := exec.Command("pacman", "-U", "--noconfirm", pkgFile)
+	installCmd.Stdout = io.MultiWriter(os.Stdout, state.GetLogWriter())
+	installCmd.Stderr = io.MultiWriter(os.Stderr, state.GetLogWriter())
+	if err := installCmd.Run(); err != nil {
+		errMsg := fmt.Sprintf("failed to install package: %v\n", err)
+		state.Write([]byte("error: " + errMsg))
+		return fmt.Errorf("failed to install package: %w", err)
+	}
+	fmt.Fprintf(os.Stderr, "[debug] InstallAUR: built (%.2fs)\n", time.Since(start).Seconds())
+
 	fmt.Fprintf(os.Stderr, "[debug] InstallAUR: done (%.2fs)\n", time.Since(start).Seconds())
 	return nil
+}
+
+func findPKGFile(dir string) (string, error) {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return "", err
+	}
+	for _, entry := range entries {
+		name := entry.Name()
+		if strings.HasSuffix(name, ".pkg.tar.zst") || strings.HasSuffix(name, ".pkg.tar.gz") {
+			return filepath.Join(dir, name), nil
+		}
+	}
+	return "", fmt.Errorf("no package file found in %s", dir)
 }
 
 func getInstalledCount() (int, error) {
