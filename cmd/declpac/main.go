@@ -64,19 +64,6 @@ func run(cfg *Config) error {
 
 	merged := merge.Merge(packages)
 
-	if !cfg.DryRun {
-		if err := state.OpenLog(); err != nil {
-			fmt.Fprintf(os.Stderr, "error: %v\n", err)
-			return err
-		}
-		defer state.Close()
-
-		if err := validation.CheckDBFreshness(); err != nil {
-			fmt.Fprintf(os.Stderr, "error: %v\n", err)
-			return err
-		}
-	}
-
 	if cfg.DryRun {
 		result, err := pacman.DryRun(merged)
 		if err != nil {
@@ -86,6 +73,17 @@ func run(cfg *Config) error {
 		fmt.Println(output.Format(result))
 		fmt.Fprintf(os.Stderr, "[debug] run: dry-run done (%.2fs)\n", time.Since(start).Seconds())
 		return nil
+	}
+
+	if err := state.OpenLog(); err != nil {
+		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+		return err
+	}
+	defer state.Close()
+
+	if err := validation.CheckDBFreshness(); err != nil {
+		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+		return err
 	}
 
 	result, err := pacman.Sync(merged)
