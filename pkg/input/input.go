@@ -62,5 +62,9 @@ func readStdin(packages map[string]bool) error {
 }
 
 func normalizePackageName(name string) string {
-	return strings.TrimSpace(name)
+	name = strings.TrimSpace(name)
+	if name == "" || strings.HasPrefix(name, "#") {
+		return ""
+	}
+	return name
 }

@@ -52,12 +52,6 @@ func main() {
 }
 
 func run(cfg *Config) error {
-	if err := state.OpenLog(); err != nil {
-		fmt.Fprintf(os.Stderr, "error: %v\n", err)
-		return err
-	}
-	defer state.Close()
-
 	start := time.Now()
 	fmt.Fprintf(os.Stderr, "[debug] run: starting...\n")
 
@@ -71,6 +65,12 @@ func run(cfg *Config) error {
 	merged := merge.Merge(packages)
 
 	if !cfg.DryRun {
+		if err := state.OpenLog(); err != nil {
+			fmt.Fprintf(os.Stderr, "error: %v\n", err)
+			return err
+		}
+		defer state.Close()
+
 		if err := validation.CheckDBFreshness(); err != nil {
 			fmt.Fprintf(os.Stderr, "error: %v\n", err)
 			return err
