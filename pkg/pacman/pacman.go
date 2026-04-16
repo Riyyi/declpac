@@ -172,7 +172,7 @@ func InstallAUR(f *fetch.Fetcher, pkgName string) error {
 	cloneCmd.Stdout = io.MultiWriter(os.Stdout, state.GetLogWriter())
 	cloneCmd.Stderr = io.MultiWriter(os.Stderr, state.GetLogWriter())
 	if err := cloneCmd.Run(); err != nil {
-		errMsg := fmt.Sprintf("failed to clone AUR repo: %w\n", err)
+		errMsg := fmt.Sprintf("failed to clone AUR repo: %v\n", err)
 		state.Write([]byte("error: " + errMsg))
 		return fmt.Errorf("failed to clone AUR repo: %w", err)
 	}
@@ -184,7 +184,7 @@ func InstallAUR(f *fetch.Fetcher, pkgName string) error {
 	makepkgCmd.Stderr = io.MultiWriter(os.Stderr, state.GetLogWriter())
 	makepkgCmd.Dir = tmpDir
 	if err := makepkgCmd.Run(); err != nil {
-		errMsg := fmt.Sprintf("makepkg failed to build AUR package: %w\n", err)
+		errMsg := fmt.Sprintf("makepkg failed to build AUR package: %v\n", err)
 		state.Write([]byte("error: " + errMsg))
 		return fmt.Errorf("makepkg failed to build AUR package: %w", err)
 	}
