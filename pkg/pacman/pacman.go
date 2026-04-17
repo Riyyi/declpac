@@ -2,7 +2,6 @@ package pacman
 
 import (
 	"fmt"
-	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -35,8 +34,8 @@ func MarkAllAsDeps() error {
 	args := append([]string{"-D", "--asdeps"}, packages...)
 	cmd := exec.Command("pacman", args...)
 	state.Write([]byte("MarkAllAsDeps...\n"))
-	cmd.Stdout = io.MultiWriter(os.Stdout, state.GetLogWriter())
-	cmd.Stderr = io.MultiWriter(os.Stderr, state.GetLogWriter())
+	cmd.Stdout = state.GetLogWriter()
+	cmd.Stderr = state.GetLogWriter()
 	err = cmd.Run()
 	if err != nil {
 		state.Write([]byte(fmt.Sprintf("error: %v\n", err)))
@@ -56,8 +55,8 @@ func MarkAsExplicit(packages []string) error {
 	args := append([]string{"-D", "--asexplicit"}, packages...)
 	cmd := exec.Command("pacman", args...)
 	state.Write([]byte("MarkAsExplicit...\n"))
-	cmd.Stdout = io.MultiWriter(os.Stdout, state.GetLogWriter())
-	cmd.Stderr = io.MultiWriter(os.Stderr, state.GetLogWriter())
+	cmd.Stdout = state.GetLogWriter()
+	cmd.Stderr = state.GetLogWriter()
 	err := cmd.Run()
 	if err != nil {
 		state.Write([]byte(fmt.Sprintf("error: %v\n", err)))
@@ -190,10 +189,10 @@ func InstallAUR(f *fetch.Fetcher, pkgName string) error {
 	defer os.RemoveAll(tmpDir)
 
 	cloneURL := "https://aur.archlinux.org/" + aurInfo.PackageBase + ".git"
-	state.Write([]byte("Cloning " + cloneURL + "\n"))
 	cloneCmd := exec.Command("su", "-", sudoUser, "-c", "git clone "+cloneURL+" "+tmpDir)
-	cloneCmd.Stdout = io.MultiWriter(os.Stdout, state.GetLogWriter())
-	cloneCmd.Stderr = io.MultiWriter(os.Stderr, state.GetLogWriter())
+	state.Write([]byte("Cloning " + cloneURL + "\n"))
+	cloneCmd.Stdout = state.GetLogWriter()
+	cloneCmd.Stderr = state.GetLogWriter()
 	if err := cloneCmd.Run(); err != nil {
 		errMsg := fmt.Sprintf("failed to clone AUR repo: %v\n", err)
 		state.Write([]byte("error: " + errMsg))
@@ -203,8 +202,8 @@ func InstallAUR(f *fetch.Fetcher, pkgName string) error {
 
 	state.Write([]byte("Building package...\n"))
 	makepkgCmd := exec.Command("su", "-", sudoUser, "-c", "cd "+tmpDir+" && makepkg -s --noconfirm")
-	makepkgCmd.Stdout = io.MultiWriter(os.Stdout, state.GetLogWriter())
-	makepkgCmd.Stderr = io.MultiWriter(os.Stderr, state.GetLogWriter())
+	makepkgCmd.Stdout = state.GetLogWriter()
+	makepkgCmd.Stderr = state.GetLogWriter()
 	if err := makepkgCmd.Run(); err != nil {
 		errMsg := fmt.Sprintf("makepkg failed to build AUR package: %v\n", err)
 		state.Write([]byte("error: " + errMsg))
@@ -219,8 +218,8 @@ func InstallAUR(f *fetch.Fetcher, pkgName string) error {
 
 	state.Write([]byte("Installing package...\n"))
 	installCmd := exec.Command("pacman", "-U", "--noconfirm", pkgFile)
-	installCmd.Stdout = io.MultiWriter(os.Stdout, state.GetLogWriter())
-	installCmd.Stderr = io.MultiWriter(os.Stderr, state.GetLogWriter())
+	installCmd.Stdout = state.GetLogWriter()
+	installCmd.Stderr = state.GetLogWriter()
 	if err := installCmd.Run(); err != nil {
 		errMsg := fmt.Sprintf("failed to install package: %v\n", err)
 		state.Write([]byte("error: " + errMsg))
