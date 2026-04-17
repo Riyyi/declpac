@@ -18,7 +18,6 @@ strategy without conflict resolution.
 - **WHEN** stdin contains packages not in state files
 - **THEN** those packages shall be added to the final state
 
-#### Scenario: Duplicate packages accumulate
+#### Scenario: Duplicate packages are deduplicated
 - **WHEN** the same package appears in multiple inputs
-- **THEN** it shall be included multiple times in the final state (pacman
-  handles duplicates)
+- **THEN** it shall be included once in the final state (map deduplication)

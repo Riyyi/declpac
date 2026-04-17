@@ -10,7 +10,7 @@ The system SHALL execute pacman operations to install and upgrade all declared p
 
 #### Scenario: No partial upgrades
 - **WHEN** running pacman commands
-- **THEN** system shall use -Syu flag (full system upgrade) ensuring all packages are latest
+- **THEN** system shall use -S --needed flag (sync with skip if up-to-date) ensuring declared packages are present
 
 #### Scenario: Package availability check
 - **WHEN** a package from input is not in pacman repositories

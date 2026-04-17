@@ -17,7 +17,7 @@ After syncing, the system SHALL remove packages that are no longer required
 
 #### Scenario: Orphan cleanup after sync
 - **WHEN** sync operation completes successfully
-- **THEN** system shall run pacman -Rsu to remove unneeded dependencies
+- **THEN** system shall run pacman -Rns to remove unneeded dependencies
 - **AND** report the number of packages removed
 
 #### Scenario: Orphan cleanup respects explicitly installed
