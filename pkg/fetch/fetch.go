@@ -189,7 +189,19 @@ func (f *Fetcher) Resolve(packages []string) (map[string]*PackageInfo, error) {
 
 	result := make(map[string]*PackageInfo)
 	for _, pkg := range packages {
-		result[pkg] = &PackageInfo{Name: pkg, Exists: true}
+		result[pkg] = &PackageInfo{Name: pkg, Exists: false}
+	}
+
+	syncPkgs, err := f.checkSyncDBs(packages)
+	if err != nil {
+		return nil, err
+	}
+	fmt.Fprintf(os.Stderr, "[debug] Resolve: sync db check done (%.2fs)\n", time.Since(start).Seconds())
+
+	for pkg, syncPkg := range syncPkgs {
+		result[pkg].Exists = true
+		result[pkg].InAUR = false
+		result[pkg].syncPkg = syncPkg
 	}
 
 	localPkgs, err := f.buildLocalPkgMap()
@@ -198,58 +210,42 @@ func (f *Fetcher) Resolve(packages []string) (map[string]*PackageInfo, error) {
 	}
 	fmt.Fprintf(os.Stderr, "[debug] Resolve: local pkgs built (%.2fs)\n", time.Since(start).Seconds())
 
-	var notInLocal []string
-	for _, pkg := range packages {
-		if localPkg, ok := localPkgs[pkg]; ok {
-			result[pkg] = &PackageInfo{
-				Name:      pkg,
-				Exists:    true,
-				InAUR:     false,
-				Installed: true,
-				syncPkg:   localPkg,
-			}
-		} else {
-			notInLocal = append(notInLocal, pkg)
+	for pkg := range localPkgs {
+		if info, ok := result[pkg]; ok {
+			info.Installed = true
 		}
 	}
 
-	if len(notInLocal) > 0 {
-		syncPkgs, err := f.checkSyncDBs(notInLocal)
-		if err != nil {
-			return nil, err
+	var notInSync []string
+	for _, pkg := range packages {
+		if !result[pkg].Exists {
+			notInSync = append(notInSync, pkg)
 		}
+	}
 
-		f.ensureAURCache(packages)
+	if len(notInSync) > 0 {
+		f.ensureAURCache(notInSync)
 
 		for _, pkg := range packages {
 			info := result[pkg]
-			if info == nil {
-				continue
-			}
-
-			if info.Installed {
-				if aurInfo, ok := f.aurCache[pkg]; ok {
-					info.InAUR = true
-					info.AURInfo = &aurInfo
-				}
-				continue
-			}
-
-			if syncPkg, ok := syncPkgs[pkg]; ok {
-				info.InAUR = false
-				info.Installed = false
-				info.syncPkg = syncPkg
+			if info.Exists {
 				continue
 			}
 
 			if aurInfo, ok := f.aurCache[pkg]; ok {
 				info.InAUR = true
-				info.Installed = false
 				info.AURInfo = &aurInfo
 				continue
 			}
 
 			return nil, fmt.Errorf("package not found: %s", pkg)
+		}
+	}
+
+	for _, pkg := range packages {
+		info := result[pkg]
+		if !info.Exists && !info.InAUR {
+			return nil, fmt.Errorf("package not validated: %s", pkg)
 		}
 	}
 
@@ -277,18 +273,21 @@ func (f *Fetcher) ensureAURCache(packages []string) {
 		return
 	}
 
-	f.fetchAURInfo(uncached)
+	_, err := f.fetchAURInfo(uncached)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "[debug] ensureAURCache: fetch error: %v\n", err)
+	}
 	fmt.Fprintf(os.Stderr, "[debug] ensureAURCache: done (%.2fs)\n", time.Since(start).Seconds())
 }
 
-func (f *Fetcher) fetchAURInfo(packages []string) map[string]AURPackage {
+func (f *Fetcher) fetchAURInfo(packages []string) (map[string]AURPackage, error) {
 	start := time.Now()
 	fmt.Fprintf(os.Stderr, "[debug] fetchAURInfo: starting...\n")
 
 	result := make(map[string]AURPackage)
 
 	if len(packages) == 0 {
-		return result
+		return result, nil
 	}
 
 	v := url.Values{}
@@ -298,18 +297,18 @@ func (f *Fetcher) fetchAURInfo(packages []string) map[string]AURPackage {
 
 	resp, err := http.Get(AURInfoURL + "&" + v.Encode())
 	if err != nil {
-		return result
+		return result, err
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return result
+		return result, err
 	}
 
 	var aurResp AURResponse
 	if err := json.Unmarshal(body, &aurResp); err != nil {
-		return result
+		return result, err
 	}
 
 	for _, r := range aurResp.Results {
@@ -318,7 +317,7 @@ func (f *Fetcher) fetchAURInfo(packages []string) map[string]AURPackage {
 	}
 
 	fmt.Fprintf(os.Stderr, "[debug] fetchAURInfo: done (%.2fs)\n", time.Since(start).Seconds())
-	return result
+	return result, nil
 }
 
 func (f *Fetcher) ListOrphans() ([]string, error) {

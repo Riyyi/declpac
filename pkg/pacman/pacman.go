@@ -137,7 +137,7 @@ func categorizePackages(f *fetch.Fetcher, packages []string) (pacmanPkgs, aurPkg
 
 	for _, pkg := range packages {
 		info := resolved[pkg]
-		if info == nil || !info.Exists {
+		if info == nil || (!info.Exists && !info.InAUR) {
 			fmt.Fprintf(os.Stderr, "error: package not found: %s\n", pkg)
 			continue
 		}
@@ -335,7 +335,7 @@ func DryRun(packages []string) (*output.Result, error) {
 	var aurPkgs []string
 	for _, pkg := range packages {
 		info := resolved[pkg]
-		if info == nil || !info.Exists {
+		if info == nil || (!info.Exists && !info.InAUR) {
 			return nil, fmt.Errorf("package not found: %s", pkg)
 		}
 		if info.InAUR {
