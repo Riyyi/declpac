@@ -20,11 +20,24 @@ func MarkAllAsDeps() error {
 	start := time.Now()
 	fmt.Fprintf(os.Stderr, "[debug] MarkAllAsDeps: starting...\n")
 
-	cmd := exec.Command("pacman", "-D", "--asdeps")
+	listCmd := exec.Command("pacman", "-Qq")
+	output, err := listCmd.Output()
+	if err != nil {
+		return fmt.Errorf("failed to list packages: %w", err)
+	}
+
+	packages := strings.Split(strings.TrimSpace(string(output)), "\n")
+	if len(packages) == 0 || packages[0] == "" {
+		fmt.Fprintf(os.Stderr, "[debug] MarkAllAsDeps: no packages to mark (%.2fs)\n", time.Since(start).Seconds())
+		return nil
+	}
+
+	args := append([]string{"-D", "--asdeps"}, packages...)
+	cmd := exec.Command("pacman", args...)
 	state.Write([]byte("MarkAllAsDeps...\n"))
 	cmd.Stdout = io.MultiWriter(os.Stdout, state.GetLogWriter())
 	cmd.Stderr = io.MultiWriter(os.Stderr, state.GetLogWriter())
-	err := cmd.Run()
+	err = cmd.Run()
 	if err != nil {
 		state.Write([]byte(fmt.Sprintf("error: %v\n", err)))
 	}
