@@ -5,7 +5,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"regexp"
 	"strings"
 	"time"
 
@@ -96,7 +95,7 @@ func Sync(packages []string) (*output.Result, error) {
 
 	if len(pacmanPkgs) > 0 {
 		fmt.Fprintf(os.Stderr, "[debug] Sync: syncing %d pacman packages...\n", len(pacmanPkgs))
-		_, err = SyncPackages(pacmanPkgs)
+		err = SyncPackages(pacmanPkgs)
 		if err != nil {
 			return nil, err
 		}
@@ -263,28 +262,22 @@ func getInstalledCount() (int, error) {
 	return count, nil
 }
 
-func SyncPackages(packages []string) (int, error) {
+func SyncPackages(packages []string) error {
 	start := time.Now()
 	fmt.Fprintf(os.Stderr, "[debug] SyncPackages: starting...\n")
 
 	args := append([]string{"-S", "--needed"}, packages...)
 	cmd := exec.Command("pacman", args...)
-	output, err := cmd.CombinedOutput()
+	cmd.Stdout = state.GetLogWriter()
+	cmd.Stderr = state.GetLogWriter()
+	err := cmd.Run()
 	if err != nil {
-		errMsg := fmt.Sprintf("pacman sync failed: %s", output)
-		state.Write([]byte(errMsg))
-		return 0, fmt.Errorf("pacman sync failed: %s", output)
+		state.Write([]byte(fmt.Sprintf("pacman sync failed: %v\n", err)))
+		return fmt.Errorf("pacman sync failed: %v", err)
 	}
-
-	if len(output) > 0 {
-		state.Write(output)
-	}
-
-	re := regexp.MustCompile(`upgrading (\S+)`)
-	matches := re.FindAllStringSubmatch(string(output), -1)
 
 	fmt.Fprintf(os.Stderr, "[debug] SyncPackages: done (%.2fs)\n", time.Since(start).Seconds())
-	return len(matches), nil
+	return nil
 }
 
 func CleanupOrphans() (int, error) {
@@ -304,15 +297,12 @@ func CleanupOrphans() (int, error) {
 	}
 
 	removeCmd := exec.Command("pacman", "-Rns")
-	output, err := removeCmd.CombinedOutput()
+	removeCmd.Stdout = state.GetLogWriter()
+	removeCmd.Stderr = state.GetLogWriter()
+	err = removeCmd.Run()
 	if err != nil {
-		errMsg := fmt.Sprintf("%s: %s", err, output)
-		state.Write([]byte(errMsg))
-		return 0, fmt.Errorf("%s: %s", err, output)
-	}
-
-	if len(output) > 0 {
-		state.Write(output)
+		state.Write([]byte(fmt.Sprintf("cleanup orphans failed: %v\n", err)))
+		return 0, fmt.Errorf("cleanup orphans failed: %v", err)
 	}
 
 	count := len(orphans)
