@@ -8,7 +8,11 @@ import (
 	"time"
 )
 
+// -----------------------------------------
+
 var logFile *os.File
+
+// -----------------------------------------
 
 func OpenLog() error {
 	logPath := filepath.Join("/var/log", "declpac.log")
@@ -17,6 +21,7 @@ func OpenLog() error {
 		return err
 	}
 	logFile = f
+	writeTimestamp()
 	return nil
 }
 
@@ -25,7 +30,7 @@ func GetLogWriter() io.Writer {
 }
 
 func Write(msg []byte) {
-	PrependWithTimestamp(logFile, msg)
+	logFile.Write(msg)
 }
 
 func Close() error {
@@ -35,9 +40,10 @@ func Close() error {
 	return logFile.Close()
 }
 
-func PrependWithTimestamp(w io.Writer, msg []byte) {
+// -----------------------------------------
+
+func writeTimestamp() {
 	ts := time.Now().Format("2006-01-02 15:04:05")
 	header := fmt.Sprintf("\n--- %s ---\n", ts)
-	w.Write([]byte(header))
-	w.Write(msg)
+	logFile.Write([]byte(header))
 }
