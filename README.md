@@ -167,11 +167,14 @@ declpac/
 ├── pkg/
 │   ├── input/          # State file/stdin reading
 │   ├── merge/          # Package merging
-│   ├── fetch/         # Package resolution (pacman/AUR)
+│   ├── fetch/          # Package resolution
+│   │   ├── aur/        # AUR support
+│   │   └── alpm/       # ALPM support
 │   ├── pacman/         # Pacman operations
-│   ├── validation/    # Database freshness check
-│   ├── output/        # Output formatting
-│   └── state/         # Logging
+│   │   ├── read/       # Read packages
+│   │   └── sync/       # Sync packages
+│   ├── log/            # Logging
+│   └── output/         # Output formatting
 └── README.md
 ```
 

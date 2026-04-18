@@ -9,11 +9,11 @@ import (
 	"github.com/urfave/cli/v3"
 
 	"github.com/Riyyi/declpac/pkg/input"
+	"github.com/Riyyi/declpac/pkg/log"
 	"github.com/Riyyi/declpac/pkg/merge"
 	"github.com/Riyyi/declpac/pkg/output"
 	"github.com/Riyyi/declpac/pkg/pacman"
-	"github.com/Riyyi/declpac/pkg/state"
-	"github.com/Riyyi/declpac/pkg/validation"
+	"github.com/Riyyi/declpac/pkg/pacman/read"
 )
 
 type Config struct {
@@ -65,7 +65,7 @@ func run(cfg *Config) error {
 	merged := merge.Merge(packages)
 
 	if cfg.DryRun {
-		result, err := pacman.DryRun(merged)
+		result, err := read.DryRun(merged)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "error: %v\n", err)
 			return err
@@ -75,16 +75,11 @@ func run(cfg *Config) error {
 		return nil
 	}
 
-	if err := state.OpenLog(); err != nil {
+	if err := log.OpenLog(); err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		return err
 	}
-	defer state.Close()
-
-	if err := validation.CheckDBFreshness(); err != nil {
-		fmt.Fprintf(os.Stderr, "error: %v\n", err)
-		return err
-	}
+	defer log.Close()
 
 	result, err := pacman.Sync(merged)
 	if err != nil {
