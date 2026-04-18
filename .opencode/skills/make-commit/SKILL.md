@@ -27,17 +27,18 @@ Make a git commit, distinguishing between user and AI contributions.
 
 2. **Check for commit message**
 
-   **Capitalization rule**: Commit messages should start with a capital letter,
-   unless it refers to a tool or project that explicitly uses lowercase as its
-   name (e.g., "go", "npm", "rustc").
+   **Commit message formatting rule**: Commit messages should start with a
+   capital letter, unless it refers to a tool or project that explicitly uses
+   lowercase as its name (e.g., "go", "npm", "rustc"). They must adhere to the
+   72-character wide title plus (optional) description convention.
 
    If the user did NOT provide a commit message, generate one from staged changes:
    ```bash
-   git diff --staged --stat
+   git --no-pager diff --staged
    ```
    Create a reasonable commit message based on the changes.
 
-   If thed user DID provide a message, format it into a proper commit message.
+   If the user **DID** provide a message, format it into a proper commit message.
 
 3. **Show commit message and confirm**
 
