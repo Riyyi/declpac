@@ -18,15 +18,11 @@ In `cmd/declpac/main.go` `run()`:
 
 Modify `pkg/pacman/pacman.go`:
 
-All state-modifying functions use `state.Write()` instead of `state.GetLogWriter().Write()`:
-
-```
-// OLD
-state.GetLogWriter().Write(output)
-
-// NEW
-state.Write(output)  // auto-prepends timestamp
-```
+Each state-modifying function writes timestamp ONCE at start, then captures output:
+- Write `timestamp - operation name` to log
+- Run command, capture output
+- Write captured output to log
+- Write output to terminal
 
 **Functions updated:**
 - `SyncPackages()` - write output with timestamp
