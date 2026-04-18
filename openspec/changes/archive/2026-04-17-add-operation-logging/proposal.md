@@ -7,7 +7,7 @@ debugging and audit.
 ## What Changes
 
 - Add state directory initialization creating `~/.local/state/declpac` if not exists
-- Open/manage a single log file at `$XDG_STATE_HOME/declpac` (e.g., `~/.local/state/declpac/declpac`)
+- Open/manage a single log file at `/var/log/declpac.log`
 - Instrument all state-modifying exec calls in `pkg/pacman/pacman.go` to tee or append output to this file
 - Skip debug messages (internal timing logs)
 - Capture and write errors before returning

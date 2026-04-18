@@ -47,7 +47,7 @@
 - [x] 6.1 Get list of currently installed packages before sync
 - [x] 6.2 Mark declared state packages as explicitly installed via pacman -D --explicit
 - [x] 6.3 Run pacman sync operation (5.x series)
-- [x] 6.4 Run pacman -Rsu to remove orphaned packages
+- [x] 6.4 Run pacman -Rns to remove orphaned packages
 - [x] 6.5 Capture and report number of packages removed
 - [x] 6.6 Handle case where no orphans exist (no packages removed)
 

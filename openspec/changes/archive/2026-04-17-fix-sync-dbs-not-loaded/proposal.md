@@ -18,4 +18,4 @@ The program fails to find packages that exist in official repositories (like `cm
 
 ## Impact
 
-- `pkg/pacman/pacman.go`: Modify `New()` function to register sync DBs after getting them from the handle
+- `pkg/fetch/fetch.go`: Modify `New()` function to register sync DBs after getting them from the handle
