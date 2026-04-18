@@ -14,10 +14,11 @@ import (
 	"github.com/Jguer/dyalpm"
 )
 
-var (
-	Root       = "/"
-	LockFile   = "/var/lib/pacman/db.lock"
-	AURInfoURL = "https://aur.archlinux.org/rpc?v=5&type=info"
+const (
+	Root        = "/"
+	PacmanState = "/var/lib/pacman"
+	LockFile    = PacmanState + "/db.lock"
+	AURInfoURL  = "https://aur.archlinux.org/rpc?v=5&type=info"
 )
 
 type Fetcher struct {
@@ -51,7 +52,7 @@ func New() (*Fetcher, error) {
 	start := time.Now()
 	fmt.Fprintf(os.Stderr, "[debug] Fetcher New: starting...\n")
 
-	handle, err := dyalpm.Initialize(Root, "/var/lib/pacman")
+	handle, err := dyalpm.Initialize(Root, PacmanState)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize alpm: %w", err)
 	}
