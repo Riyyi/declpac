@@ -32,7 +32,7 @@ func MarkAllAsDeps() error {
 
 	args := append([]string{"-D", "--asdeps"}, packages...)
 	cmd := exec.Command("pacman", args...)
-	state.Write([]byte("MarkAllAsDeps...\n"))
+	state.Write([]byte("pacman " + strings.Join(args, " ") + "\n"))
 	cmd.Stdout = state.GetLogWriter()
 	cmd.Stderr = state.GetLogWriter()
 	err = cmd.Run()
@@ -53,7 +53,7 @@ func MarkAsExplicit(packages []string) error {
 
 	args := append([]string{"-D", "--asexplicit"}, packages...)
 	cmd := exec.Command("pacman", args...)
-	state.Write([]byte("MarkAsExplicit...\n"))
+	state.Write([]byte("pacman " + strings.Join(args, " ") + "\n"))
 	cmd.Stdout = state.GetLogWriter()
 	cmd.Stderr = state.GetLogWriter()
 	err := cmd.Run()
@@ -189,7 +189,7 @@ func InstallAUR(f *fetch.Fetcher, pkgName string) error {
 
 	cloneURL := "https://aur.archlinux.org/" + aurInfo.PackageBase + ".git"
 	cloneCmd := exec.Command("su", "-", sudoUser, "-c", "git clone "+cloneURL+" "+tmpDir)
-	state.Write([]byte("Cloning " + cloneURL + "\n"))
+	state.Write([]byte("git clone " + cloneURL + " " + tmpDir + "\n"))
 	cloneCmd.Stdout = state.GetLogWriter()
 	cloneCmd.Stderr = state.GetLogWriter()
 	if err := cloneCmd.Run(); err != nil {
@@ -199,7 +199,7 @@ func InstallAUR(f *fetch.Fetcher, pkgName string) error {
 	}
 	fmt.Fprintf(os.Stderr, "[debug] InstallAUR: cloned (%.2fs)\n", time.Since(start).Seconds())
 
-	state.Write([]byte("Building package...\n"))
+	state.Write([]byte("makepkg -s --noconfirm\n"))
 	makepkgCmd := exec.Command("su", "-", sudoUser, "-c", "cd "+tmpDir+" && makepkg -s --noconfirm")
 	makepkgCmd.Stdout = state.GetLogWriter()
 	makepkgCmd.Stderr = state.GetLogWriter()
@@ -215,7 +215,7 @@ func InstallAUR(f *fetch.Fetcher, pkgName string) error {
 		return fmt.Errorf("failed to find built package: %w", err)
 	}
 
-	state.Write([]byte("Installing package...\n"))
+	state.Write([]byte("pacman -U --noconfirm " + pkgFile + "\n"))
 	installCmd := exec.Command("pacman", "-U", "--noconfirm", pkgFile)
 	installCmd.Stdout = state.GetLogWriter()
 	installCmd.Stderr = state.GetLogWriter()
@@ -268,6 +268,7 @@ func SyncPackages(packages []string) error {
 
 	args := append([]string{"-S", "--needed"}, packages...)
 	cmd := exec.Command("pacman", args...)
+	state.Write([]byte("pacman " + strings.Join(args, " ") + "\n"))
 	cmd.Stdout = state.GetLogWriter()
 	cmd.Stderr = state.GetLogWriter()
 	err := cmd.Run()
@@ -297,6 +298,7 @@ func CleanupOrphans() (int, error) {
 	}
 
 	removeCmd := exec.Command("pacman", "-Rns")
+	state.Write([]byte("pacman -Rns\n"))
 	removeCmd.Stdout = state.GetLogWriter()
 	removeCmd.Stderr = state.GetLogWriter()
 	err = removeCmd.Run()
