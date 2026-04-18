@@ -22,7 +22,7 @@ func SyncPackages(packages []string, logWriter io.Writer) error {
 		logWriter = os.Stderr
 	}
 
-	args := append([]string{"-S", "--needed"}, packages...)
+	args := append([]string{"-S", "--needed", "--noconfirm"}, packages...)
 	cmd := exec.Command("pacman", args...)
 	cmd.Stdout = logWriter
 	cmd.Stderr = logWriter
