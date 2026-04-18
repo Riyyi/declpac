@@ -85,7 +85,7 @@ func DryRun(packages []string) (*output.Result, error) {
 		if info == nil || (!info.Exists && !info.InAUR) {
 			return nil, fmt.Errorf("package not found: %s", pkg)
 		}
-		if info.InAUR {
+		if info.InAUR && !info.Installed {
 			aurPkgs = append(aurPkgs, pkg)
 		} else if !info.Installed {
 			toInstall = append(toInstall, pkg)
@@ -99,11 +99,22 @@ func DryRun(packages []string) (*output.Result, error) {
 	}
 	fmt.Fprintf(os.Stderr, "[debug] DryRun: orphans listed (%.2fs)\n", time.Since(start).Seconds())
 
+	pkgSet := make(map[string]bool)
+	for _, p := range packages {
+		pkgSet[p] = true
+	}
+	var toRemove []string
+	for _, o := range orphans {
+		if !pkgSet[o] {
+			toRemove = append(toRemove, o)
+		}
+	}
+
 	fmt.Fprintf(os.Stderr, "[debug] DryRun: done (%.2fs)\n", time.Since(start).Seconds())
 	return &output.Result{
 		Installed: len(toInstall) + len(aurPkgs),
-		Removed:   len(orphans),
+		Removed:   len(toRemove),
 		ToInstall: append(toInstall, aurPkgs...),
-		ToRemove:  orphans,
+		ToRemove:  toRemove,
 	}, nil
 }
