@@ -7,6 +7,8 @@ import (
 	"os/exec"
 	"strings"
 	"time"
+
+	"github.com/Riyyi/declpac/pkg/log"
 )
 
 type Result struct {
@@ -16,7 +18,7 @@ type Result struct {
 
 func SyncPackages(packages []string, logWriter io.Writer) error {
 	start := time.Now()
-	fmt.Fprintf(os.Stderr, "[debug] SyncPackages: starting...\n")
+	log.Debug("SyncPackages: starting...")
 
 	if logWriter == nil {
 		logWriter = os.Stderr
@@ -33,13 +35,13 @@ func SyncPackages(packages []string, logWriter io.Writer) error {
 		return fmt.Errorf("pacman sync failed: %w", err)
 	}
 
-	fmt.Fprintf(os.Stderr, "[debug] SyncPackages: done (%.2fs)\n", time.Since(start).Seconds())
+	log.Debug("SyncPackages: done (%.2fs)", time.Since(start).Seconds())
 	return nil
 }
 
 func RefreshDB(logWriter io.Writer) error {
 	start := time.Now()
-	fmt.Fprintf(os.Stderr, "[debug] RefreshDB: starting...\n")
+	log.Debug("RefreshDB: starting...")
 
 	if logWriter == nil {
 		logWriter = os.Stderr
@@ -53,7 +55,7 @@ func RefreshDB(logWriter io.Writer) error {
 		return fmt.Errorf("failed to refresh pacman database: %w", err)
 	}
 
-	fmt.Fprintf(os.Stderr, "[debug] RefreshDB: done (%.2fs)\n", time.Since(start).Seconds())
+	log.Debug("RefreshDB: done (%.2fs)", time.Since(start).Seconds())
 	return nil
 }
 
@@ -63,7 +65,7 @@ func MarkAs(packages []string, flag string, logWriter io.Writer) error {
 	}
 	start := time.Now()
 	flagName := map[string]string{"deps": "asdeps", "explicit": "asexplicit"}[flag]
-	fmt.Fprintf(os.Stderr, "[debug] MarkAs(%s): starting...\n", flag)
+	log.Debug("MarkAs(%s): starting...", flag)
 
 	if logWriter == nil {
 		logWriter = os.Stderr
@@ -80,20 +82,20 @@ func MarkAs(packages []string, flag string, logWriter io.Writer) error {
 		return fmt.Errorf("mark as %s failed: %w", flag, err)
 	}
 
-	fmt.Fprintf(os.Stderr, "[debug] MarkAs(%s): done (%.2fs)\n", flag, time.Since(start).Seconds())
+	log.Debug("MarkAs(%s): done (%.2fs)", flag, time.Since(start).Seconds())
 	return nil
 }
 
 func RemoveOrphans(orphans []string, logWriter io.Writer) (int, error) {
 	start := time.Now()
-	fmt.Fprintf(os.Stderr, "[debug] RemoveOrphans: starting...\n")
+	log.Debug("RemoveOrphans: starting...")
 
 	if logWriter == nil {
 		logWriter = os.Stderr
 	}
 
 	if len(orphans) == 0 {
-		fmt.Fprintf(os.Stderr, "[debug] RemoveOrphans: done (no orphans) (%.2fs)\n", time.Since(start).Seconds())
+		log.Debug("RemoveOrphans: done (no orphans) (%.2fs)", time.Since(start).Seconds())
 		return 0, nil
 	}
 
@@ -112,13 +114,13 @@ func RemoveOrphans(orphans []string, logWriter io.Writer) (int, error) {
 
 	count := len(orphans)
 
-	fmt.Fprintf(os.Stderr, "[debug] RemoveOrphans: done (%d) (%.2fs)\n", count, time.Since(start).Seconds())
+	log.Debug("RemoveOrphans: done (%d) (%.2fs)", count, time.Since(start).Seconds())
 	return count, nil
 }
 
 func InstallAUR(pkgName string, packageBase string, logWriter io.Writer) error {
 	start := time.Now()
-	fmt.Fprintf(os.Stderr, "[debug] InstallAUR: starting...\n")
+	log.Debug("InstallAUR: starting...")
 
 	if logWriter == nil {
 		logWriter = os.Stderr
@@ -150,7 +152,7 @@ func InstallAUR(pkgName string, packageBase string, logWriter io.Writer) error {
 	if err := cloneCmd.Run(); err != nil {
 		return fmt.Errorf("failed to clone AUR repo: %w", err)
 	}
-	fmt.Fprintf(os.Stderr, "[debug] InstallAUR: cloned (%.2fs)\n", time.Since(start).Seconds())
+	log.Debug("InstallAUR: cloned (%.2fs)", time.Since(start).Seconds())
 
 	makepkgCmdStr := "su - " + sudoUser + " -c 'cd " + tmpDir + " && makepkg -s --noconfirm'"
 	fmt.Fprintf(logWriter, "[cmd] %s\n", makepkgCmdStr)
@@ -160,7 +162,7 @@ func InstallAUR(pkgName string, packageBase string, logWriter io.Writer) error {
 	if err := makepkgCmd.Run(); err != nil {
 		return fmt.Errorf("makepkg failed to build AUR package: %w", err)
 	}
-	fmt.Fprintf(os.Stderr, "[debug] InstallAUR: built (%.2fs)\n", time.Since(start).Seconds())
+	log.Debug("InstallAUR: built (%.2fs)", time.Since(start).Seconds())
 
 	pkgFile, err := findPKGFile(tmpDir)
 	if err != nil {
@@ -175,7 +177,7 @@ func InstallAUR(pkgName string, packageBase string, logWriter io.Writer) error {
 	if err := installCmd.Run(); err != nil {
 		return fmt.Errorf("failed to install package: %w", err)
 	}
-	fmt.Fprintf(os.Stderr, "[debug] InstallAUR: done (%.2fs)\n", time.Since(start).Seconds())
+	log.Debug("InstallAUR: done (%.2fs)", time.Since(start).Seconds())
 
 	return nil
 }

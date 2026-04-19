@@ -2,12 +2,12 @@ package aur
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 	"net/url"
-	"os"
 	"time"
+
+	"github.com/Riyyi/declpac/pkg/log"
 )
 
 var AURInfoURL = "https://aur.archlinux.org/rpc?v=5&type=info"
@@ -35,7 +35,7 @@ func New() *Client {
 
 func (c *Client) Fetch(packages []string) (map[string]Package, error) {
 	start := time.Now()
-	fmt.Fprintf(os.Stderr, "[debug] aur.Fetch: starting...\n")
+	log.Debug("aur.Fetch: starting...")
 
 	result := make(map[string]Package)
 
@@ -51,7 +51,7 @@ func (c *Client) Fetch(packages []string) (map[string]Package, error) {
 	}
 
 	if len(uncached) == 0 {
-		fmt.Fprintf(os.Stderr, "[debug] aur.Fetch: done (cached) (%.2fs)\n", time.Since(start).Seconds())
+		log.Debug("aur.Fetch: done (cached) (%.2fs)", time.Since(start).Seconds())
 		for _, pkg := range packages {
 			result[pkg] = c.cache[pkg]
 		}
@@ -84,7 +84,7 @@ func (c *Client) Fetch(packages []string) (map[string]Package, error) {
 		result[r.Name] = r
 	}
 
-	fmt.Fprintf(os.Stderr, "[debug] aur.Fetch: done (%.2fs)\n", time.Since(start).Seconds())
+	log.Debug("aur.Fetch: done (%.2fs)", time.Since(start).Seconds())
 	return result, nil
 }
 

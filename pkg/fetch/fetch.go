@@ -2,11 +2,11 @@ package fetch
 
 import (
 	"fmt"
-	"os"
 	"time"
 
 	"github.com/Riyyi/declpac/pkg/fetch/alpm"
 	"github.com/Riyyi/declpac/pkg/fetch/aur"
+	"github.com/Riyyi/declpac/pkg/log"
 )
 
 type PackageInfo struct {
@@ -24,7 +24,7 @@ type Fetcher struct {
 
 func New() (*Fetcher, error) {
 	start := time.Now()
-	fmt.Fprintf(os.Stderr, "[debug] fetch.Fetcher New: starting...\n")
+	log.Debug("fetch.Fetcher New: starting...")
 
 	alpmHandle, err := alpm.New()
 	if err != nil {
@@ -33,7 +33,7 @@ func New() (*Fetcher, error) {
 
 	aurClient := aur.New()
 
-	fmt.Fprintf(os.Stderr, "[debug] fetch.Fetcher New: done (%.2fs)\n", time.Since(start).Seconds())
+	log.Debug("fetch.Fetcher New: done (%.2fs)", time.Since(start).Seconds())
 	return &Fetcher{
 		alpmHandle: alpmHandle,
 		aurClient:  aurClient,
@@ -62,7 +62,7 @@ func (f *Fetcher) BuildLocalPkgMap() (map[string]interface{}, error) {
 
 func (f *Fetcher) Resolve(packages []string) (map[string]*PackageInfo, error) {
 	start := time.Now()
-	fmt.Fprintf(os.Stderr, "[debug] fetch.Resolve: starting...\n")
+	log.Debug("fetch.Resolve: starting...")
 
 	result := make(map[string]*PackageInfo)
 	for _, pkg := range packages {
@@ -73,7 +73,7 @@ func (f *Fetcher) Resolve(packages []string) (map[string]*PackageInfo, error) {
 	if err != nil {
 		return nil, err
 	}
-	fmt.Fprintf(os.Stderr, "[debug] fetch.Resolve: sync db check done (%.2fs)\n", time.Since(start).Seconds())
+	log.Debug("fetch.Resolve: sync db check done (%.2fs)", time.Since(start).Seconds())
 
 	for pkg := range syncPkgs {
 		result[pkg].Exists = true
@@ -84,7 +84,7 @@ func (f *Fetcher) Resolve(packages []string) (map[string]*PackageInfo, error) {
 	if err != nil {
 		return nil, err
 	}
-	fmt.Fprintf(os.Stderr, "[debug] fetch.Resolve: local pkgs built (%.2fs)\n", time.Since(start).Seconds())
+	log.Debug("fetch.Resolve: local pkgs built (%.2fs)", time.Since(start).Seconds())
 
 	for pkg := range localPkgs {
 		if info, ok := result[pkg]; ok {
@@ -101,7 +101,7 @@ func (f *Fetcher) Resolve(packages []string) (map[string]*PackageInfo, error) {
 
 	if len(notInSync) > 0 {
 		if _, err := f.aurClient.Fetch(notInSync); err != nil {
-			fmt.Fprintf(os.Stderr, "[debug] fetch.Resolve: aur fetch error: %v\n", err)
+			log.Debug("fetch.Resolve: aur fetch error: %v", err)
 		}
 
 		for _, pkg := range packages {
@@ -127,6 +127,6 @@ func (f *Fetcher) Resolve(packages []string) (map[string]*PackageInfo, error) {
 		}
 	}
 
-	fmt.Fprintf(os.Stderr, "[debug] fetch.Resolve: done (%.2fs)\n", time.Since(start).Seconds())
+	log.Debug("fetch.Resolve: done (%.2fs)", time.Since(start).Seconds())
 	return result, nil
 }

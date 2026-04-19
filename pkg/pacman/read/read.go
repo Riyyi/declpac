@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/Riyyi/declpac/pkg/fetch"
+	"github.com/Riyyi/declpac/pkg/log"
 	"github.com/Riyyi/declpac/pkg/output"
 )
 
@@ -15,7 +16,7 @@ var LockFile = "/var/lib/pacman/db.lock"
 
 func List() ([]string, error) {
 	start := time.Now()
-	fmt.Fprintf(os.Stderr, "[debug] List: starting...\n")
+	log.Debug("List: starting...")
 
 	cmd := exec.Command("pacman", "-Qq")
 	output, err := cmd.Output()
@@ -28,13 +29,13 @@ func List() ([]string, error) {
 		list = nil
 	}
 
-	fmt.Fprintf(os.Stderr, "[debug] List: done (%.2fs)\n", time.Since(start).Seconds())
+	log.Debug("List: done (%.2fs)", time.Since(start).Seconds())
 	return list, nil
 }
 
 func ListOrphans() ([]string, error) {
 	start := time.Now()
-	fmt.Fprintf(os.Stderr, "[debug] ListOrphans: starting...\n")
+	log.Debug("ListOrphans: starting...")
 
 	cmd := exec.Command("pacman", "-Qdtq")
 	output, err := cmd.Output()
@@ -47,7 +48,7 @@ func ListOrphans() ([]string, error) {
 		orphans = orphans[1:]
 	}
 
-	fmt.Fprintf(os.Stderr, "[debug] ListOrphans: done (%.2fs)\n", time.Since(start).Seconds())
+	log.Debug("ListOrphans: done (%.2fs)", time.Since(start).Seconds())
 	return orphans, nil
 }
 
@@ -63,20 +64,20 @@ func DBFreshness() (bool, error) {
 
 func DryRun(packages []string) (*output.Result, error) {
 	start := time.Now()
-	fmt.Fprintf(os.Stderr, "[debug] DryRun: starting...\n")
+	log.Debug("DryRun: starting...")
 
 	f, err := fetch.New()
 	if err != nil {
 		return nil, err
 	}
 	defer f.Close()
-	fmt.Fprintf(os.Stderr, "[debug] DryRun: initialized fetcher (%.2fs)\n", time.Since(start).Seconds())
+	log.Debug("DryRun: initialized fetcher (%.2fs)", time.Since(start).Seconds())
 
 	resolved, err := f.Resolve(packages)
 	if err != nil {
 		return nil, err
 	}
-	fmt.Fprintf(os.Stderr, "[debug] DryRun: packages resolved (%.2fs)\n", time.Since(start).Seconds())
+	log.Debug("DryRun: packages resolved (%.2fs)", time.Since(start).Seconds())
 
 	var toInstall []string
 	var aurPkgs []string
@@ -91,13 +92,13 @@ func DryRun(packages []string) (*output.Result, error) {
 			toInstall = append(toInstall, pkg)
 		}
 	}
-	fmt.Fprintf(os.Stderr, "[debug] DryRun: packages categorized (%.2fs)\n", time.Since(start).Seconds())
+	log.Debug("DryRun: packages categorized (%.2fs)", time.Since(start).Seconds())
 
 	orphans, err := ListOrphans()
 	if err != nil {
 		return nil, err
 	}
-	fmt.Fprintf(os.Stderr, "[debug] DryRun: orphans listed (%.2fs)\n", time.Since(start).Seconds())
+	log.Debug("DryRun: orphans listed (%.2fs)", time.Since(start).Seconds())
 
 	pkgSet := make(map[string]bool)
 	for _, p := range packages {
@@ -110,7 +111,7 @@ func DryRun(packages []string) (*output.Result, error) {
 		}
 	}
 
-	fmt.Fprintf(os.Stderr, "[debug] DryRun: done (%.2fs)\n", time.Since(start).Seconds())
+	log.Debug("DryRun: done (%.2fs)", time.Since(start).Seconds())
 	return &output.Result{
 		Installed: len(toInstall) + len(aurPkgs),
 		Removed:   len(toRemove),

@@ -11,6 +11,16 @@ import (
 // -----------------------------------------
 
 var logFile *os.File
+var Verbose bool
+
+// -----------------------------------------
+
+func Debug(format string, args ...interface{}) {
+	if !Verbose {
+		return
+	}
+	fmt.Fprintf(os.Stderr, "[debug] "+format+"\n", args...)
+}
 
 // -----------------------------------------
 

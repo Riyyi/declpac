@@ -20,6 +20,7 @@ type Config struct {
 	StateFiles []string
 	NoConfirm  bool
 	DryRun     bool
+	Verbose    bool
 }
 
 func main() {
@@ -40,8 +41,15 @@ func main() {
 				Usage:       "Simulate the sync without making changes",
 				Destination: &cfg.DryRun,
 			},
+			&cli.BoolFlag{
+				Name:        "verbose",
+				Aliases:     []string{"v"},
+				Usage:       "Enable verbose output",
+				Destination: &cfg.Verbose,
+			},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
+			log.Verbose = cfg.Verbose
 			return run(cfg)
 		},
 	}
@@ -53,14 +61,14 @@ func main() {
 
 func run(cfg *Config) error {
 	start := time.Now()
-	fmt.Fprintf(os.Stderr, "[debug] run: starting...\n")
+	log.Debug("run: starting...")
 
 	packages, err := input.ReadPackages(cfg.StateFiles)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		return err
 	}
-	fmt.Fprintf(os.Stderr, "[debug] run: packages read (%.2fs)\n", time.Since(start).Seconds())
+	log.Debug("run: packages read (%.2fs)", time.Since(start).Seconds())
 
 	merged := merge.Merge(packages)
 
@@ -71,7 +79,7 @@ func run(cfg *Config) error {
 			return err
 		}
 		fmt.Println(output.Format(result))
-		fmt.Fprintf(os.Stderr, "[debug] run: dry-run done (%.2fs)\n", time.Since(start).Seconds())
+		log.Debug("run: dry-run done (%.2fs)", time.Since(start).Seconds())
 		return nil
 	}
 
@@ -88,6 +96,6 @@ func run(cfg *Config) error {
 	}
 
 	fmt.Println(output.Format(result))
-	fmt.Fprintf(os.Stderr, "[debug] run: sync done (%.2fs)\n", time.Since(start).Seconds())
+	log.Debug("run: sync done (%.2fs)", time.Since(start).Seconds())
 	return nil
 }

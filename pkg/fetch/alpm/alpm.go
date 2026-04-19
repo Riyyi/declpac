@@ -2,10 +2,10 @@ package alpm
 
 import (
 	"fmt"
-	"os"
 	"time"
 
 	"github.com/Jguer/dyalpm"
+	"github.com/Riyyi/declpac/pkg/log"
 )
 
 var (
@@ -21,7 +21,7 @@ type Handle struct {
 
 func New() (*Handle, error) {
 	start := time.Now()
-	fmt.Fprintf(os.Stderr, "[debug] alpm.New: starting...\n")
+	log.Debug("alpm.New: starting...")
 
 	handle, err := dyalpm.Initialize(Root, PacmanState)
 	if err != nil {
@@ -48,7 +48,7 @@ func New() (*Handle, error) {
 		}
 	}
 
-	fmt.Fprintf(os.Stderr, "[debug] alpm.New: done (%.2fs)\n", time.Since(start).Seconds())
+	log.Debug("alpm.New: done (%.2fs)", time.Since(start).Seconds())
 	return &Handle{
 		handle:  handle,
 		localDB: localDB,
@@ -64,7 +64,7 @@ func (h *Handle) Release() error {
 }
 
 func registerSyncDBs(handle dyalpm.Handle) ([]dyalpm.Database, error) {
-	fmt.Fprintf(os.Stderr, "[debug] registerSyncDBs: starting...\n")
+	log.Debug("registerSyncDBs: starting...")
 
 	repos := []string{"core", "extra", "multilib"}
 	var dbs []dyalpm.Database
@@ -86,13 +86,13 @@ func registerSyncDBs(handle dyalpm.Handle) ([]dyalpm.Database, error) {
 		}
 	}
 
-	fmt.Fprintf(os.Stderr, "[debug] registerSyncDBs: done (%d dbs)\n", len(dbs))
+	log.Debug("registerSyncDBs: done (%d dbs)", len(dbs))
 	return dbs, nil
 }
 
 func (h *Handle) LocalPackages() (map[string]dyalpm.Package, error) {
 	start := time.Now()
-	fmt.Fprintf(os.Stderr, "[debug] LocalPackages: starting...\n")
+	log.Debug("LocalPackages: starting...")
 
 	localPkgs := make(map[string]dyalpm.Package)
 
@@ -104,13 +104,13 @@ func (h *Handle) LocalPackages() (map[string]dyalpm.Package, error) {
 		return nil, fmt.Errorf("failed to iterate local package cache: %w", err)
 	}
 
-	fmt.Fprintf(os.Stderr, "[debug] LocalPackages: done (%.2fs)\n", time.Since(start).Seconds())
+	log.Debug("LocalPackages: done (%.2fs)", time.Since(start).Seconds())
 	return localPkgs, nil
 }
 
 func (h *Handle) SyncPackages(pkgNames []string) (map[string]dyalpm.Package, error) {
 	start := time.Now()
-	fmt.Fprintf(os.Stderr, "[debug] SyncPackages: starting...\n")
+	log.Debug("SyncPackages: starting...")
 
 	syncPkgs := make(map[string]dyalpm.Package)
 	pkgSet := make(map[string]bool)
@@ -132,6 +132,6 @@ func (h *Handle) SyncPackages(pkgNames []string) (map[string]dyalpm.Package, err
 		}
 	}
 
-	fmt.Fprintf(os.Stderr, "[debug] SyncPackages: done (%.2fs)\n", time.Since(start).Seconds())
+	log.Debug("SyncPackages: done (%.2fs)", time.Since(start).Seconds())
 	return syncPkgs, nil
 }

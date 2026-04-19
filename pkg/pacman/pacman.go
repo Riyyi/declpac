@@ -15,7 +15,7 @@ import (
 
 func Sync(packages []string) (*output.Result, error) {
 	start := time.Now()
-	fmt.Fprintf(os.Stderr, "[debug] Sync: starting...\n")
+	log.Debug("Sync: starting...")
 
 	list, err := read.List()
 	if err != nil {
@@ -32,36 +32,35 @@ func Sync(packages []string) (*output.Result, error) {
 			return nil, err
 		}
 	}
-	fmt.Fprintf(os.Stderr, "[debug] Sync: database fresh (%.2fs)\n", time.Since(start).Seconds())
+	log.Debug("Sync: database fresh (%.2fs)", time.Since(start).Seconds())
 
 	f, err := fetch.New()
 	if err != nil {
 		return nil, err
 	}
 	defer f.Close()
-	fmt.Fprintf(os.Stderr, "[debug] Sync: initialized fetcher (%.2fs)\n", time.Since(start).Seconds())
+	log.Debug("Sync: initialized fetcher (%.2fs)", time.Since(start).Seconds())
 
-	fmt.Fprintf(os.Stderr, "[debug] Sync: categorizing packages...\n")
+	log.Debug("Sync: categorizing packages...")
 	pacmanPkgs, aurPkgs, err := categorizePackages(f, packages)
 	if err != nil {
 		return nil, err
 	}
-	fmt.Fprintf(os.Stderr, "[debug] Sync: packages categorized (%.2fs)\n", time.Since(start).Seconds())
+	log.Debug("Sync: packages categorized (%.2fs)", time.Since(start).Seconds())
 
 	if len(pacmanPkgs) > 0 {
-		fmt.Fprintf(os.Stderr, "[debug] Sync: syncing %d pacman packages...\n", len(pacmanPkgs))
+		log.Debug("Sync: syncing %d pacman packages...", len(pacmanPkgs))
 		if err := sync.SyncPackages(pacmanPkgs, log.GetLogWriter()); err != nil {
 			return nil, err
 		}
-		fmt.Fprintf(os.Stderr, "[debug] Sync: pacman packages synced (%.2fs)\n", time.Since(start).Seconds())
+		log.Debug("Sync: pacman packages synced (%.2fs)", time.Since(start).Seconds())
 	}
 
 	for _, pkg := range aurPkgs {
 		if slices.Contains(list, pkg) {
-			fmt.Fprintf(os.Stderr, "[debug] Sync: AUR package %s already installed, skipping...\n", pkg)
 			continue
 		}
-		fmt.Fprintf(os.Stderr, "[debug] Sync: installing AUR package %s...\n", pkg)
+		log.Debug("Sync: installing AUR package %s...", pkg)
 		aurInfo, ok := f.GetAURPackage(pkg)
 		if !ok {
 			return nil, fmt.Errorf("AUR package not found in cache: %s", pkg)
@@ -69,18 +68,18 @@ func Sync(packages []string) (*output.Result, error) {
 		if err := sync.InstallAUR(pkg, aurInfo.PackageBase, log.GetLogWriter()); err != nil {
 			return nil, err
 		}
-		fmt.Fprintf(os.Stderr, "[debug] Sync: AUR package %s installed (%.2fs)\n", pkg, time.Since(start).Seconds())
+		log.Debug("Sync: AUR package %s installed (%.2fs)", pkg, time.Since(start).Seconds())
 	}
 
-	fmt.Fprintf(os.Stderr, "[debug] Sync: marking all as deps...\n")
+	log.Debug("Sync: marking all as deps...")
 	markAllAsDeps()
-	fmt.Fprintf(os.Stderr, "[debug] Sync: all marked as deps (%.2fs)\n", time.Since(start).Seconds())
+	log.Debug("Sync: all marked as deps (%.2fs)", time.Since(start).Seconds())
 
-	fmt.Fprintf(os.Stderr, "[debug] Sync: marking state packages as explicit...\n")
+	log.Debug("Sync: marking state packages as explicit...")
 	if err := sync.MarkAs(packages, "explicit", log.GetLogWriter()); err != nil {
 		fmt.Fprintf(os.Stderr, "warning: could not mark state packages as explicit: %v\n", err)
 	}
-	fmt.Fprintf(os.Stderr, "[debug] Sync: state packages marked as explicit (%.2fs)\n", time.Since(start).Seconds())
+	log.Debug("Sync: state packages marked as explicit (%.2fs)", time.Since(start).Seconds())
 
 	removed, err := cleanupOrphans()
 	if err != nil {
@@ -95,7 +94,7 @@ func Sync(packages []string) (*output.Result, error) {
 
 	installedCount := max(after-before, 0)
 
-	fmt.Fprintf(os.Stderr, "[debug] Sync: done (%.2fs)\n", time.Since(start).Seconds())
+	log.Debug("Sync: done (%.2fs)", time.Since(start).Seconds())
 	return &output.Result{
 		Installed: installedCount,
 		Removed:   removed,
@@ -104,7 +103,7 @@ func Sync(packages []string) (*output.Result, error) {
 
 func categorizePackages(f *fetch.Fetcher, packages []string) (pacmanPkgs, aurPkgs []string, err error) {
 	start := time.Now()
-	fmt.Fprintf(os.Stderr, "[debug] categorizePackages: starting...\n")
+	log.Debug("categorizePackages: starting...")
 
 	resolved, err := f.Resolve(packages)
 	if err != nil {
@@ -124,13 +123,13 @@ func categorizePackages(f *fetch.Fetcher, packages []string) (pacmanPkgs, aurPkg
 		}
 	}
 
-	fmt.Fprintf(os.Stderr, "[debug] categorizePackages: done (%.2fs)\n", time.Since(start).Seconds())
+	log.Debug("categorizePackages: done (%.2fs)", time.Since(start).Seconds())
 	return pacmanPkgs, aurPkgs, nil
 }
 
 func markAllAsDeps() error {
 	start := time.Now()
-	fmt.Fprintf(os.Stderr, "[debug] markAllAsDeps: starting...\n")
+	log.Debug("markAllAsDeps: starting...")
 
 	packages, err := read.List()
 	if err != nil || len(packages) == 0 {
@@ -142,13 +141,13 @@ func markAllAsDeps() error {
 		return err
 	}
 
-	fmt.Fprintf(os.Stderr, "[debug] markAllAsDeps: done (%.2fs)\n", time.Since(start).Seconds())
+	log.Debug("markAllAsDeps: done (%.2fs)", time.Since(start).Seconds())
 	return nil
 }
 
 func cleanupOrphans() (int, error) {
 	start := time.Now()
-	fmt.Fprintf(os.Stderr, "[debug] cleanupOrphans: starting...\n")
+	log.Debug("cleanupOrphans: starting...")
 
 	orphans, err := read.ListOrphans()
 	if err != nil {
@@ -162,6 +161,6 @@ func cleanupOrphans() (int, error) {
 		return 0, err
 	}
 
-	fmt.Fprintf(os.Stderr, "[debug] cleanupOrphans: done (%.2fs)\n", time.Since(start).Seconds())
+	log.Debug("cleanupOrphans: done (%.2fs)", time.Since(start).Seconds())
 	return removed, nil
 }
