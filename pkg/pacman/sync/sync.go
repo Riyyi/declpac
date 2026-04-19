@@ -23,6 +23,8 @@ func SyncPackages(packages []string, logWriter io.Writer) error {
 	}
 
 	args := append([]string{"-S", "--needed", "--noconfirm"}, packages...)
+	cmdStr := "pacman " + strings.Join(args, " ")
+	fmt.Fprintf(logWriter, "[cmd] %s\n", cmdStr)
 	cmd := exec.Command("pacman", args...)
 	cmd.Stdout = logWriter
 	cmd.Stderr = logWriter
@@ -43,6 +45,7 @@ func RefreshDB(logWriter io.Writer) error {
 		logWriter = os.Stderr
 	}
 
+	fmt.Fprintf(logWriter, "[cmd] pacman -Syy\n")
 	cmd := exec.Command("pacman", "-Syy")
 	cmd.Stdout = logWriter
 	cmd.Stderr = logWriter
@@ -67,6 +70,8 @@ func MarkAs(packages []string, flag string, logWriter io.Writer) error {
 	}
 
 	args := append([]string{"-D", "--" + flagName}, packages...)
+	cmdStr := "pacman " + strings.Join(args, " ")
+	fmt.Fprintf(logWriter, "[cmd] %s\n", cmdStr)
 	cmd := exec.Command("pacman", args...)
 	cmd.Stdout = logWriter
 	cmd.Stderr = logWriter
@@ -95,6 +100,8 @@ func RemoveOrphans(orphans []string, logWriter io.Writer) (int, error) {
 	args := make([]string, 0, 2+len(orphans))
 	args = append(args, "pacman", "-Rns")
 	args = append(args, orphans...)
+	cmdStr := strings.Join(args, " ")
+	fmt.Fprintf(logWriter, "[cmd] %s\n", cmdStr)
 	removeCmd := exec.Command(args[0], args[1:]...)
 	removeCmd.Stdout = logWriter
 	removeCmd.Stderr = logWriter
@@ -126,6 +133,8 @@ func InstallAUR(pkgName string, packageBase string, logWriter io.Writer) error {
 	}
 
 	tmpDir := "/tmp/declpac-aur-" + pkgName
+	mkdirCmdStr := "su - " + sudoUser + " -c 'rm -rf " + tmpDir + " && mkdir -p " + tmpDir + "'"
+	fmt.Fprintf(logWriter, "[cmd] %s\n", mkdirCmdStr)
 	mkdirCmd := exec.Command("su", "-", sudoUser, "-c", "rm -rf "+tmpDir+" && mkdir -p "+tmpDir)
 	if err := mkdirCmd.Run(); err != nil {
 		return fmt.Errorf("failed to create temp directory: %w", err)
@@ -133,6 +142,8 @@ func InstallAUR(pkgName string, packageBase string, logWriter io.Writer) error {
 	defer os.RemoveAll(tmpDir)
 
 	cloneURL := "https://aur.archlinux.org/" + packageBase + ".git"
+	cloneCmdStr := "su - " + sudoUser + " -c 'git clone " + cloneURL + " " + tmpDir + "'"
+	fmt.Fprintf(logWriter, "[cmd] %s\n", cloneCmdStr)
 	cloneCmd := exec.Command("su", "-", sudoUser, "-c", "git clone "+cloneURL+" "+tmpDir)
 	cloneCmd.Stdout = logWriter
 	cloneCmd.Stderr = logWriter
@@ -141,6 +152,8 @@ func InstallAUR(pkgName string, packageBase string, logWriter io.Writer) error {
 	}
 	fmt.Fprintf(os.Stderr, "[debug] InstallAUR: cloned (%.2fs)\n", time.Since(start).Seconds())
 
+	makepkgCmdStr := "su - " + sudoUser + " -c 'cd " + tmpDir + " && makepkg -s --noconfirm'"
+	fmt.Fprintf(logWriter, "[cmd] %s\n", makepkgCmdStr)
 	makepkgCmd := exec.Command("su", "-", sudoUser, "-c", "cd "+tmpDir+" && makepkg -s --noconfirm")
 	makepkgCmd.Stdout = logWriter
 	makepkgCmd.Stderr = logWriter
@@ -154,6 +167,8 @@ func InstallAUR(pkgName string, packageBase string, logWriter io.Writer) error {
 		return fmt.Errorf("failed to find built package: %w", err)
 	}
 
+	installCmdStr := "pacman -U --noconfirm " + pkgFile
+	fmt.Fprintf(logWriter, "[cmd] %s\n", installCmdStr)
 	installCmd := exec.Command("pacman", "-U", "--noconfirm", pkgFile)
 	installCmd.Stdout = logWriter
 	installCmd.Stderr = logWriter

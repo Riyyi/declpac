@@ -3,6 +3,7 @@ package pacman
 import (
 	"fmt"
 	"os"
+	"slices"
 	"time"
 
 	"github.com/Riyyi/declpac/pkg/fetch"
@@ -56,6 +57,10 @@ func Sync(packages []string) (*output.Result, error) {
 	}
 
 	for _, pkg := range aurPkgs {
+		if slices.Contains(list, pkg) {
+			fmt.Fprintf(os.Stderr, "[debug] Sync: AUR package %s already installed, skipping...\n", pkg)
+			continue
+		}
 		fmt.Fprintf(os.Stderr, "[debug] Sync: installing AUR package %s...\n", pkg)
 		aurInfo, ok := f.GetAURPackage(pkg)
 		if !ok {
