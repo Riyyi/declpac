@@ -63,6 +63,7 @@ docker
 |------|-------|-------------|
 | `--state` | `-s` | State file to read package list from (can be used multiple times) |
 | `--dry-run` | | Preview changes without applying them |
+| `--verbose` | `-v` | Enable verbose output |
 | `--help` | `-h` | Show help message |
 
 ## How It Works
@@ -82,59 +83,6 @@ If the pacman database is older than 24 hours, it is automatically refreshed.
 ### Logging
 
 Operations are logged to `/var/log/declpac.log`.
-
-## Output
-
-```
-# Packages installed/removed
-Installed 5 packages, removed 2 packages
-
-# No changes needed
-Installed 0 packages, removed 0 packages
-
-# Dry-run preview
-Installed 3 packages, removed 1 packages
-Would install: vim, git, docker
-Would remove: python2
-
-# Error
-error: package not found: <package-name>
-```
-
-### Exit Codes
-
-| Code | Meaning |
-|------|---------|
-| 0 | Success |
-| 1 | Error |
-
-## Examples
-
-### Minimal System
-
-```bash
-echo -e "base\nbase-devel\nlinux-headers\nvim\ngit\ncurl" > ~/.config/declpac/minimal.txt
-sudo declpac --state ~/.config/declpac/minimal.txt
-```
-
-### Development Environment
-
-```bash
-# development.txt
-go
-nodejs
-python
-rust
-docker
-
-sudo declpac --state development.txt
-```
-
-### Dry-Run
-
-```bash
-sudo declpac --dry-run --state packages.txt
-```
 
 ## Troubleshooting
 
