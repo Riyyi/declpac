@@ -1,6 +1,8 @@
 package read
 
 import (
+	"bytes"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -38,8 +40,16 @@ func ListOrphans() ([]string, error) {
 	log.Debug("ListOrphans: starting...")
 
 	cmd := exec.Command("pacman", "-Qdtq")
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+
 	output, err := cmd.Output()
 	if err != nil {
+		// pacman -Qdtq exits 1 when there are no orphans, this isnt an error
+		var exitErr *exec.ExitError
+		if errors.As(err, &exitErr) && exitErr.ExitCode() == 1 && stderr.Len() == 0 {
+			return nil, nil
+		}
 		return nil, err
 	}
 
