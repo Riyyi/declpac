@@ -97,8 +97,8 @@ func RemoveOrphans(orphans []string, logWriter io.Writer) (int, error) {
 		return 0, nil
 	}
 
-	args := make([]string, 0, 2+len(orphans))
-	args = append(args, "pacman", "-Rns")
+	args := make([]string, 0, 3+len(orphans))
+	args = append(args, "pacman", "-Rns", "--noconfirm")
 	args = append(args, orphans...)
 	cmdStr := strings.Join(args, " ")
 	fmt.Fprintf(logWriter, "[cmd] %s\n", cmdStr)
