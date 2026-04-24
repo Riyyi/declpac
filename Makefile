@@ -1,7 +1,18 @@
-.PHONY: fmt vet check githook
+.PHONY: build fmt vet check githook install uninstall
+
+PKG := github.com/Riyyi/declpac
+BIN := declpac
+BUILD_DIR := bin
+BUILD := $(BUILD_DIR)/$(BIN)
+PREFIX ?= /usr/local
+DESTDIR ?=
 
 STAGED_GO := $(shell git diff --cached --name-only --diff-filter=ACM | grep '\.go$$')
 STAGED_PKGS := $(shell echo "$(STAGED_GO)" | tr ' ' '\n' | xargs -I{} dirname {} | sort -u | sed 's|^|./|')
+
+build:
+	@mkdir -p $(BUILD_DIR)
+	go build -o $(BUILD) ./cmd/declpac
 
 fmt:
 	@if [ -z "$(STAGED_GO)" ]; then exit 0; fi; \
@@ -23,3 +34,10 @@ githook:
 	@echo 'make check' >> .git/hooks/pre-commit
 	@chmod +x .git/hooks/pre-commit
 	@echo "Installed pre-commit hook: .git/hooks/pre-commit"
+
+install: build
+	@mkdir -p $(DESTDIR)$(PREFIX)/bin
+	@install -m 0755 $(BUILD) $(DESTDIR)$(PREFIX)/bin/$(BIN)
+
+uninstall:
+	@rm -f $(DESTDIR)$(PREFIX)/bin/$(BIN)
