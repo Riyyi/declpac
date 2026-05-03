@@ -76,7 +76,7 @@ func Sync(packages []string, noCheck bool, prune bool) (*output.Result, error) {
 		if !ok {
 			return nil, fmt.Errorf("AUR package not found in cache: %s", pkg)
 		}
-		if err := sync.InstallAUR(pkg, aurInfo.PackageBase, log.GetLogWriter()); err != nil {
+		if err := sync.InstallAUR(f, pkg, aurInfo.PackageBase, false, log.GetLogWriter()); err != nil {
 			return nil, err
 		}
 		log.Debug("Sync: AUR package %s installed (%.2fs)", pkg, time.Since(start).Seconds())

@@ -14,6 +14,7 @@ type PackageInfo struct {
 	InAUR     bool
 	Exists    bool
 	Installed bool
+	Provided  string
 	AURInfo   *aur.Package
 }
 
@@ -38,8 +39,16 @@ func (f *Fetcher) Close() error {
 	return f.alpmHandle.Release()
 }
 
+func (f *Fetcher) FetchAur(packages []string) (map[string]aur.Package, error) {
+	return f.aurClient.Fetch(packages)
+}
+
 func (f *Fetcher) GetAURPackage(name string) (aur.Package, bool) {
 	return f.aurClient.Get(name)
+}
+
+func (f *Fetcher) FindProvidingPackage(depName string) (string, bool) {
+	return f.alpmHandle.FindProvidingPackage(depName)
 }
 
 func (f *Fetcher) Resolve(packages []string) (map[string]*PackageInfo, error) {
@@ -95,6 +104,13 @@ func (f *Fetcher) Resolve(packages []string) (map[string]*PackageInfo, error) {
 			if aurInfo, ok := f.aurClient.Get(pkg); ok {
 				info.InAUR = true
 				info.AURInfo = &aurInfo
+				continue
+			}
+
+			if providedBy, ok := f.FindProvidingPackage(pkg); ok {
+				log.Debug("fetch.Resolve: %s provided by %s", pkg, providedBy)
+				info.Provided = providedBy
+				info.Exists = true
 				continue
 			}
 

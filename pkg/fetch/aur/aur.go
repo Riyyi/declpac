@@ -13,10 +13,16 @@ import (
 var AURInfoURL = "https://aur.archlinux.org/rpc?v=5&type=info"
 
 type Package struct {
-	Name        string `json:"Name"`
-	PackageBase string `json:"PackageBase"`
-	Version     string `json:"Version"`
-	URL         string `json:"URL"`
+	Name        string   `json:"Name"`
+	PackageBase string   `json:"PackageBase"`
+	Version     string   `json:"Version"`
+	URL         string   `json:"URL"`
+	Depends     []string `json:"Depends"`
+	MakeDepends []string `json:"MakeDepends"`
+}
+
+func (p Package) AllDepends() []string {
+	return append(p.Depends, p.MakeDepends...)
 }
 
 type Response struct {

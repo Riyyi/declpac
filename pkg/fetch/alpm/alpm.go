@@ -37,6 +37,14 @@ func (h *Handle) LocalPackages() (map[string]dyalpm.Package, error) {
 	return localPkgs, nil
 }
 
+func (h *Handle) FindProvidingPackage(depName string) (string, bool) {
+	pkg := h.handle.FindDBSatisfier(h.syncDBs, depName)
+	if pkg != nil {
+		return pkg.Name(), true
+	}
+	return "", false
+}
+
 func (h *Handle) Release() error {
 	if h.handle != nil {
 		h.handle.Release()
