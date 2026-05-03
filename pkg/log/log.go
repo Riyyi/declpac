@@ -31,7 +31,7 @@ func Command(name string, args ...string) *exec.Cmd {
 	return exec.Command(name, args...)
 }
 
-func Debug(format string, args ...interface{}) {
+func Debug(format string, args ...any) {
 	if !Verbose {
 		return
 	}

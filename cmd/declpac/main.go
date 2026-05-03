@@ -8,6 +8,7 @@ import (
 
 	"github.com/urfave/cli/v3"
 
+	"github.com/Riyyi/declpac/pkg/auth"
 	"github.com/Riyyi/declpac/pkg/input"
 	"github.com/Riyyi/declpac/pkg/log"
 	"github.com/Riyyi/declpac/pkg/output"
@@ -96,6 +97,8 @@ func run(cfg *Config) error {
 		log.Debug("run: dry-run done (%.2fs)", time.Since(start).Seconds())
 		return nil
 	}
+
+	auth.Start()
 
 	if err := log.OpenLog(); err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)

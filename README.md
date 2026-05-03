@@ -27,22 +27,22 @@ sudo mv declpac /usr/local/bin/
 - pacman
 - makepkg (for AUR support)
 - git (for AUR support)
-- Root privileges
+- sudo/doas (root privileges)
 
 ## Usage
 
 ```bash
 # Single state file
-sudo declpac --state packages.txt
+declpac --state packages.txt
 
 # Multiple state files
-sudo declpac --state base.txt --state apps.txt
+declpac --state base.txt --state apps.txt
 
 # From stdin
-cat packages.txt | sudo declpac
+cat packages.txt | declpac
 
 # Preview changes without applying
-sudo declpac --dry-run --state packages.txt
+declpac --dry-run --state packages.txt
 ```
 
 ### State File Format
@@ -93,13 +93,6 @@ Operation are logged to `$XDG_STATE_HOME/declpac.log`
 (or `~/.local/state/declpac.log` on fallback)
 
 ## Troubleshooting
-
-### Permission denied
-
-Use sudo:
-```bash
-sudo declpac --state packages.txt
-```
 
 ### Package not found
 

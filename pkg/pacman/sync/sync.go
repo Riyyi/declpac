@@ -4,17 +4,15 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/user"
 	"strings"
-	"sync"
 	"time"
 
+	"github.com/Riyyi/declpac/pkg/auth"
 	"github.com/Riyyi/declpac/pkg/fetch"
 	"github.com/Riyyi/declpac/pkg/fetch/aur"
 	"github.com/Riyyi/declpac/pkg/log"
 )
-
-var sudoUser string
-var sudoUserOnce sync.Once
 
 type Result struct {
 	Installed int
@@ -37,19 +35,18 @@ func InstallAUR(f *fetch.Fetcher, pkgName string, packageBase string, asDeps boo
 		return err
 	}
 
-	sudoUser := getSudoUser()
-	tmpDir := "/tmp/declpac/" + pkgName
-	if err := createTempDir(sudoUser, tmpDir); err != nil {
+	tmpDir := getTempDirName() + "/" + pkgName
+	if err := createTempDir(tmpDir); err != nil {
 		return err
 	}
 	defer os.RemoveAll(tmpDir)
 
-	if err := cloneRepo(sudoUser, packageBase, tmpDir, logWriter); err != nil {
+	if err := cloneRepo(packageBase, tmpDir, logWriter); err != nil {
 		return err
 	}
 	log.Debug("InstallAUR: cloned (%.2fs)", time.Since(start).Seconds())
 
-	if err := buildPackage(sudoUser, tmpDir, asDeps, logWriter); err != nil {
+	if err := buildPackage(tmpDir, asDeps, logWriter); err != nil {
 		return err
 	}
 	log.Debug("InstallAUR: built (%.2fs)", time.Since(start).Seconds())
@@ -80,7 +77,7 @@ func MarkAs(packages []string, flag string, logWriter io.Writer) error {
 	}
 
 	args := append([]string{"-D", "--" + flagName}, packages...)
-	cmd := log.Command("pacman", args...)
+	cmd := auth.Command("pacman", args...)
 	cmd.Stdout = logWriter
 	cmd.Stderr = logWriter
 	err := cmd.Run()
@@ -100,7 +97,7 @@ func RefreshDB(logWriter io.Writer) error {
 		logWriter = os.Stderr
 	}
 
-	cmd := log.Command("pacman", "-Syy")
+	cmd := auth.Command("pacman", "-Syy")
 	cmd.Stdout = logWriter
 	cmd.Stderr = logWriter
 	if err := cmd.Run(); err != nil {
@@ -127,7 +124,7 @@ func RemoveOrphans(orphans []string, logWriter io.Writer) (int, error) {
 	args := make([]string, 0, 3+len(orphans))
 	args = append(args, "pacman", "-Rns", "--noconfirm")
 	args = append(args, orphans...)
-	removeCmd := log.Command(args[0], args[1:]...)
+	removeCmd := auth.Command(args[0], args[1:]...)
 	removeCmd.Stdout = logWriter
 	removeCmd.Stderr = logWriter
 	err := removeCmd.Run()
@@ -150,7 +147,7 @@ func SyncPackages(packages []string, logWriter io.Writer) error {
 	}
 
 	args := append([]string{"-S", "--needed", "--noconfirm"}, packages...)
-	cmd := log.Command("pacman", args...)
+	cmd := auth.Command("pacman", args...)
 	cmd.Stdout = logWriter
 	cmd.Stderr = logWriter
 	err := cmd.Run()
@@ -165,12 +162,12 @@ func SyncPackages(packages []string, logWriter io.Writer) error {
 // -----------------------------------------
 // private
 
-func buildPackage(sudoUser string, tmpDir string, asDeps bool, logWriter io.Writer) error {
-	makepkgArgs := []string{"makepkg", "-s", "--noconfirm"}
+func buildPackage(tmpDir string, asDeps bool, logWriter io.Writer) error {
+	makepkgArgs := []string{"-D", tmpDir, "-s", "--noconfirm"}
 	if asDeps {
 		makepkgArgs = append(makepkgArgs, "--asdeps")
 	}
-	makepkgCmd := log.Command("su", "-", sudoUser, "-c", "cd "+tmpDir+" && "+strings.Join(makepkgArgs, " "))
+	makepkgCmd := log.Command("makepkg", makepkgArgs...)
 	makepkgCmd.Stdout = logWriter
 	makepkgCmd.Stderr = logWriter
 	if err := makepkgCmd.Run(); err != nil {
@@ -179,9 +176,9 @@ func buildPackage(sudoUser string, tmpDir string, asDeps bool, logWriter io.Writ
 	return nil
 }
 
-func cloneRepo(sudoUser string, packageBase string, tmpDir string, logWriter io.Writer) error {
+func cloneRepo(packageBase string, tmpDir string, logWriter io.Writer) error {
 	cloneURL := "https://aur.archlinux.org/" + packageBase + ".git"
-	cloneCmd := log.Command("su", "-", sudoUser, "-c", "git clone "+cloneURL+" "+tmpDir)
+	cloneCmd := log.Command("git", "clone", cloneURL, tmpDir)
 	cloneCmd.Stdout = logWriter
 	cloneCmd.Stderr = logWriter
 	if err := cloneCmd.Run(); err != nil {
@@ -190,15 +187,21 @@ func cloneRepo(sudoUser string, packageBase string, tmpDir string, logWriter io.
 	return nil
 }
 
-func createTempDir(sudoUser string, tmpDir string) error {
+func createTempDir(tmpDir string) error {
 	if tmpDir == "" || tmpDir == "/" || !strings.HasPrefix(tmpDir, "/tmp") {
 		return fmt.Errorf("safety check: prevented malformed rm -rf call")
 	}
 
-	mkdirCmd := log.Command("su", "-", sudoUser, "-c", "rm -rf "+tmpDir+" && mkdir -p "+tmpDir)
+	rmdirCmd := log.Command("rm", "-rf", tmpDir)
+	if err := rmdirCmd.Run(); err != nil {
+		return fmt.Errorf("failed to remove temp directory: %w", err)
+	}
+
+	mkdirCmd := log.Command("mkdir", "-p", tmpDir)
 	if err := mkdirCmd.Run(); err != nil {
 		return fmt.Errorf("failed to create temp directory: %w", err)
 	}
+
 	return nil
 }
 
@@ -231,21 +234,17 @@ func getAURInfo(f *fetch.Fetcher, pkgName string, packageBase string) *aur.Packa
 	return &info
 }
 
-func getSudoUser() string {
-	sudoUserOnce.Do(func() {
-		sudoUser = os.Getenv("SUDO_USER")
-		if sudoUser == "" {
-			sudoUser = os.Getenv("USER")
-			if sudoUser == "" {
-				sudoUser = "root"
-			}
-		}
-	})
-	return sudoUser
+func getTempDirName() string {
+	user, err := user.Current()
+	if err != nil {
+		return "/tmp/declpac"
+	}
+
+	return "/tmp/declpac-" + user.Username
 }
 
 func installBuiltPackage(pkgFile string, logWriter io.Writer) error {
-	installCmd := log.Command("pacman", "-U", "--noconfirm", pkgFile)
+	installCmd := auth.Command("pacman", "-U", "--noconfirm", pkgFile)
 	installCmd.Stdout = logWriter
 	installCmd.Stderr = logWriter
 	if err := installCmd.Run(); err != nil {
