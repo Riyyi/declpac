@@ -5,12 +5,16 @@ import (
 	"io"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/Riyyi/declpac/pkg/fetch"
 	"github.com/Riyyi/declpac/pkg/fetch/aur"
 	"github.com/Riyyi/declpac/pkg/log"
 )
+
+var sudoUser     string
+var sudoUserOnce sync.Once
 
 type Result struct {
 	Installed int
@@ -238,13 +242,15 @@ func resolveAndInstallDeps(f *fetch.Fetcher, aurInfo *aur.Package, logWriter io.
 }
 
 func getSudoUser() string {
-	sudoUser := os.Getenv("SUDO_USER")
-	if sudoUser == "" {
-		sudoUser = os.Getenv("USER")
+	sudoUserOnce.Do(func() {
+		sudoUser = os.Getenv("SUDO_USER")
 		if sudoUser == "" {
-			sudoUser = "root"
+			sudoUser = os.Getenv("USER")
+			if sudoUser == "" {
+				sudoUser = "root"
+			}
 		}
-	}
+	})
 	return sudoUser
 }
 
