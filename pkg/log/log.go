@@ -13,6 +13,9 @@ import (
 var logFile *os.File
 var Verbose bool
 
+// -----------------------------------------
+// public
+
 func Close() error {
 	if logFile == nil {
 		return nil

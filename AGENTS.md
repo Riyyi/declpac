@@ -10,21 +10,16 @@ tool before responding to the user:
 ## Code Organization
 
 ### Go: File Structure
-- Types must appear at the top of each file.
+- Variables must appear at the top of each file.
+- Types must appear after variables.
 - Constructors must appear after types.
 - Public (exported) functions must appear after constructors.
 - Private (unexported) functions must appear at the bottom of each file.
 - Within each section, definitions must be sorted alphabetically by name.
-- The sections must be separated by exactly these dividers:
+- The sections must be separated by exactly these dividers, filling in the section:
 
 	// -----------------------------------------
-	// constructors
-
-	// -----------------------------------------
-	// public
-
-	// -----------------------------------------
-	// private
+	// <section>
 
 ### Go: Line Length
 

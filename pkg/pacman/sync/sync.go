@@ -13,13 +13,16 @@ import (
 	"github.com/Riyyi/declpac/pkg/log"
 )
 
-var sudoUser     string
+var sudoUser string
 var sudoUserOnce sync.Once
 
 type Result struct {
 	Installed int
 	Removed   int
 }
+
+// -----------------------------------------
+// public
 
 func InstallAUR(f *fetch.Fetcher, pkgName string, packageBase string, asDeps bool, logWriter io.Writer) error {
 	start := time.Now()
@@ -162,6 +165,39 @@ func SyncPackages(packages []string, logWriter io.Writer) error {
 // -----------------------------------------
 // private
 
+func buildPackage(sudoUser string, tmpDir string, asDeps bool, logWriter io.Writer) error {
+	makepkgArgs := []string{"makepkg", "-s", "--noconfirm"}
+	if asDeps {
+		makepkgArgs = append(makepkgArgs, "--asdeps")
+	}
+	makepkgCmd := log.Command("su", "-", sudoUser, "-c", "cd "+tmpDir+" && "+strings.Join(makepkgArgs, " "))
+	makepkgCmd.Stdout = logWriter
+	makepkgCmd.Stderr = logWriter
+	if err := makepkgCmd.Run(); err != nil {
+		return fmt.Errorf("makepkg failed to build AUR package: %w", err)
+	}
+	return nil
+}
+
+func cloneRepo(sudoUser string, packageBase string, tmpDir string, logWriter io.Writer) error {
+	cloneURL := "https://aur.archlinux.org/" + packageBase + ".git"
+	cloneCmd := log.Command("su", "-", sudoUser, "-c", "git clone "+cloneURL+" "+tmpDir)
+	cloneCmd.Stdout = logWriter
+	cloneCmd.Stderr = logWriter
+	if err := cloneCmd.Run(); err != nil {
+		return fmt.Errorf("failed to clone AUR repo: %w", err)
+	}
+	return nil
+}
+
+func createTempDir(sudoUser string, tmpDir string) error {
+	mkdirCmd := log.Command("su", "-", sudoUser, "-c", "rm -rf "+tmpDir+" && mkdir -p "+tmpDir)
+	if err := mkdirCmd.Run(); err != nil {
+		return fmt.Errorf("failed to create temp directory: %w", err)
+	}
+	return nil
+}
+
 func findPKGFile(pkgName string, dir string) (string, error) {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
@@ -189,6 +225,29 @@ func getAURInfo(f *fetch.Fetcher, pkgName string, packageBase string) *aur.Packa
 		return nil
 	}
 	return &info
+}
+
+func getSudoUser() string {
+	sudoUserOnce.Do(func() {
+		sudoUser = os.Getenv("SUDO_USER")
+		if sudoUser == "" {
+			sudoUser = os.Getenv("USER")
+			if sudoUser == "" {
+				sudoUser = "root"
+			}
+		}
+	})
+	return sudoUser
+}
+
+func installBuiltPackage(pkgFile string, logWriter io.Writer) error {
+	installCmd := log.Command("pacman", "-U", "--noconfirm", pkgFile)
+	installCmd.Stdout = logWriter
+	installCmd.Stderr = logWriter
+	if err := installCmd.Run(); err != nil {
+		return fmt.Errorf("failed to install package: %w", err)
+	}
+	return nil
 }
 
 func resolveAndInstallDeps(f *fetch.Fetcher, aurInfo *aur.Package, logWriter io.Writer) error {
@@ -238,61 +297,5 @@ func resolveAndInstallDeps(f *fetch.Fetcher, aurInfo *aur.Package, logWriter io.
 		}
 	}
 
-	return nil
-}
-
-func getSudoUser() string {
-	sudoUserOnce.Do(func() {
-		sudoUser = os.Getenv("SUDO_USER")
-		if sudoUser == "" {
-			sudoUser = os.Getenv("USER")
-			if sudoUser == "" {
-				sudoUser = "root"
-			}
-		}
-	})
-	return sudoUser
-}
-
-func createTempDir(sudoUser string, tmpDir string) error {
-	mkdirCmd := log.Command("su", "-", sudoUser, "-c", "rm -rf "+tmpDir+" && mkdir -p "+tmpDir)
-	if err := mkdirCmd.Run(); err != nil {
-		return fmt.Errorf("failed to create temp directory: %w", err)
-	}
-	return nil
-}
-
-func cloneRepo(sudoUser string, packageBase string, tmpDir string, logWriter io.Writer) error {
-	cloneURL := "https://aur.archlinux.org/" + packageBase + ".git"
-	cloneCmd := log.Command("su", "-", sudoUser, "-c", "git clone "+cloneURL+" "+tmpDir)
-	cloneCmd.Stdout = logWriter
-	cloneCmd.Stderr = logWriter
-	if err := cloneCmd.Run(); err != nil {
-		return fmt.Errorf("failed to clone AUR repo: %w", err)
-	}
-	return nil
-}
-
-func buildPackage(sudoUser string, tmpDir string, asDeps bool, logWriter io.Writer) error {
-	makepkgArgs := []string{"makepkg", "-s", "--noconfirm"}
-	if asDeps {
-		makepkgArgs = append(makepkgArgs, "--asdeps")
-	}
-	makepkgCmd := log.Command("su", "-", sudoUser, "-c", "cd "+tmpDir+" && "+strings.Join(makepkgArgs, " "))
-	makepkgCmd.Stdout = logWriter
-	makepkgCmd.Stderr = logWriter
-	if err := makepkgCmd.Run(); err != nil {
-		return fmt.Errorf("makepkg failed to build AUR package: %w", err)
-	}
-	return nil
-}
-
-func installBuiltPackage(pkgFile string, logWriter io.Writer) error {
-	installCmd := log.Command("pacman", "-U", "--noconfirm", pkgFile)
-	installCmd.Stdout = logWriter
-	installCmd.Stderr = logWriter
-	if err := installCmd.Run(); err != nil {
-		return fmt.Errorf("failed to install package: %w", err)
-	}
 	return nil
 }

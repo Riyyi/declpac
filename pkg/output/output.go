@@ -12,6 +12,9 @@ type Result struct {
 	ToRemove  []string
 }
 
+// -----------------------------------------
+// public
+
 func Format(r *Result) string {
 	var b strings.Builder
 	b.WriteString(fmt.Sprintf("installed %d packages, removed %d packages", r.Installed, r.Removed))
