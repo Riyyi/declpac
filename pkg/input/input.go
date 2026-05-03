@@ -3,6 +3,7 @@ package input
 import (
 	"bufio"
 	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -10,7 +11,8 @@ func ReadPackages(stateFiles []string) (map[string]bool, error) {
 	packages := make(map[string]bool)
 
 	for _, file := range stateFiles {
-		if err := readStateFile(file, packages); err != nil {
+		expanded := expandPath(file)
+		if err := readStateFile(expanded, packages); err != nil {
 			return nil, err
 		}
 	}
@@ -20,6 +22,28 @@ func ReadPackages(stateFiles []string) (map[string]bool, error) {
 	}
 
 	return packages, nil
+}
+
+// -----------------------------------------
+// private
+
+func expandPath(path string) string {
+	if strings.HasPrefix(path, "~/") {
+		home, err := os.UserHomeDir()
+		if err != nil {
+			return path
+		}
+		return filepath.Join(home, path[2:])
+	}
+	return path
+}
+
+func normalizePackageName(name string) string {
+	name = strings.TrimSpace(name)
+	if name == "" || strings.HasPrefix(name, "#") {
+		return ""
+	}
+	return name
 }
 
 func readStateFile(path string, packages map[string]bool) error {
@@ -59,12 +83,4 @@ func readStdin(packages map[string]bool) error {
 	}
 
 	return scanner.Err()
-}
-
-func normalizePackageName(name string) string {
-	name = strings.TrimSpace(name)
-	if name == "" || strings.HasPrefix(name, "#") {
-		return ""
-	}
-	return name
 }
