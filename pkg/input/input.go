@@ -6,6 +6,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/Riyyi/declpac/pkg/lib"
 )
 
 var ErrEmptyList = errors.New("package list is empty")
@@ -28,7 +30,7 @@ func ReadPackages(stateFiles []string) (map[string]bool, error) {
 	packages := make(map[string]bool)
 
 	for _, file := range stateFiles {
-		expanded := expandPath(file)
+		expanded := lib.ExpandPath(file)
 		if err := readStateFile(expanded, packages); err != nil {
 			return nil, err
 		}
@@ -51,27 +53,17 @@ func ReadPackages(stateFiles []string) (map[string]bool, error) {
 // -----------------------------------------
 // private
 
-func expandPath(path string) string {
-	if strings.HasPrefix(path, "~/") {
-		home, err := os.UserHomeDir()
-		if err != nil {
-			return path
-		}
-		return filepath.Join(home, path[2:])
-	}
-	return path
-}
-
 func fileExists(path string) bool {
 	_, err := os.Stat(path)
 	return err == nil
 }
 
 func getImplicitStateFile() string {
-	cfgDir, _ := os.UserConfigDir()
+	cfgDir := os.Getenv("XDG_CONFIG_HOME")
 	if cfgDir == "" {
 		cfgDir = "~/.config"
 	}
+	cfgDir = lib.ExpandPath(cfgDir)
 	return filepath.Join(cfgDir, "declpac")
 }
 

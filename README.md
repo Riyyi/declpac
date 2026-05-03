@@ -89,7 +89,8 @@ If the pacman database is older than 24 hours, it is automatically refreshed.
 
 ### Logging
 
-Operations are logged to `/var/log/declpac.log`.
+Operation are logged to `$XDG_STATE_HOME/declpac.log`
+(or `~/.local/state/declpac.log` on fallback)
 
 ## Troubleshooting
 

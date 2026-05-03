@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/Riyyi/declpac/pkg/lib"
 )
 
 var logFile *os.File
@@ -41,11 +43,18 @@ func GetLogWriter() io.Writer {
 }
 
 func OpenLog() error {
-	logPath := filepath.Join("/var/log", "declpac.log")
+	stateDir := os.Getenv("XDG_STATE_HOME")
+	if stateDir == "" {
+		stateDir = "~/.local/state"
+	}
+	stateDir = lib.ExpandPath(stateDir)
+
+	logPath := filepath.Join(stateDir, "declpac.log")
 	f, err := os.OpenFile(logPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		return err
 	}
+
 	logFile = f
 	writeTimestamp()
 	return nil
