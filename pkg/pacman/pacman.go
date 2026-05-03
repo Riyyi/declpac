@@ -13,7 +13,7 @@ import (
 	"github.com/Riyyi/declpac/pkg/pacman/sync"
 )
 
-func Sync(packages []string, noCheck bool) (*output.Result, error) {
+func Sync(packages []string, noCheck bool, prune bool) (*output.Result, error) {
 	start := time.Now()
 	log.Debug("Sync: starting...")
 
@@ -82,19 +82,24 @@ func Sync(packages []string, noCheck bool) (*output.Result, error) {
 		log.Debug("Sync: AUR package %s installed (%.2fs)", pkg, time.Since(start).Seconds())
 	}
 
-	log.Debug("Sync: marking all as deps...")
-	markAllAsDeps()
-	log.Debug("Sync: all marked as deps (%.2fs)", time.Since(start).Seconds())
+	var removed int
+	if prune {
+		log.Debug("Sync: marking all as deps...")
+		if err := markAllAsDeps(); err != nil {
+			return nil, err
+		}
+		log.Debug("Sync: all marked as deps (%.2fs)", time.Since(start).Seconds())
 
-	log.Debug("Sync: marking state packages as explicit...")
-	if err := sync.MarkAs(packages, "explicit", log.GetLogWriter()); err != nil {
-		fmt.Fprintf(os.Stderr, "warning: could not mark state packages as explicit: %v\n", err)
-	}
-	log.Debug("Sync: state packages marked as explicit (%.2fs)", time.Since(start).Seconds())
+		log.Debug("Sync: marking state packages as explicit...")
+		if err := sync.MarkAs(packages, "explicit", log.GetLogWriter()); err != nil {
+			fmt.Fprintf(os.Stderr, "warning: could not mark state packages as explicit: %v\n", err)
+		}
+		log.Debug("Sync: state packages marked as explicit (%.2fs)", time.Since(start).Seconds())
 
-	removed, err := cleanupOrphans()
-	if err != nil {
-		return nil, err
+		removed, err = cleanupOrphans()
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	list, _ = read.List()

@@ -5,8 +5,8 @@ Declarative package manager for Arch Linux that syncs your system with a declare
 ## Features
 
 - Declarative state management — define your desired package list in files or stdin
-- Smart orphan cleanup — removes packages no longer needed
-- Explicit package tracking — marks declared packages as explicit
+- Explicit package tracking — marks declared packages as explicit (with `--prune`)
+- Smart orphan cleanup — removes packages no longer needed (with `--prune`)
 - AUR support — builds and installs AUR packages automatically
 - Machine-readable output — perfect for scripting
 
@@ -67,8 +67,9 @@ contents are automatically included in the package list.
 | Flag | Alias | Description |
 |------|-------|-------------|
 | `--state` | `-s` | State file(s) to read package list from (can be used multiple times) |
-| `--nocheck` | | Skip safety check (allow significant package count reductions)
+| `--nocheck` | | Skip safety check (allow significant package count reductions) |
 | `--dry-run` | | Preview changes without applying them |
+| `--prune` | | Mark packages as explicit and cleanup orphans |
 | `--verbose` | `-v` | Enable verbose output |
 | `--help` | `-h` | Show help message |
 
@@ -79,8 +80,8 @@ contents are automatically included in the package list.
 3. **Categorize** — Check if packages are in official repos or AUR
 4. **Sync** — Install/update packages via pacman
 5. **Build** — Build and install AUR packages via makepkg
-6. **Mark** — Mark declared packages as explicit, all others as dependencies
-7. **Cleanup** — Remove orphaned packages
+6. **Mark** (with `--prune`) — Mark declared packages as explicit, all others as dependencies
+7. **Cleanup** (with `--prune`) — Remove orphaned packages
 
 ### Database Freshness
 

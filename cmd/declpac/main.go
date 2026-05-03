@@ -19,6 +19,7 @@ type Config struct {
 	StateFiles []string
 	NoCheck    bool
 	DryRun     bool
+	Prune      bool
 	Verbose    bool
 }
 
@@ -44,6 +45,11 @@ func main() {
 				Name:        "dry-run",
 				Usage:       "Simulate the sync without making changes",
 				Destination: &cfg.DryRun,
+			},
+			&cli.BoolFlag{
+				Name:        "prune",
+				Usage:       "Mark packages and cleanup orphans",
+				Destination: &cfg.Prune,
 			},
 			&cli.BoolFlag{
 				Name:        "verbose",
@@ -97,7 +103,7 @@ func run(cfg *Config) error {
 	}
 	defer log.Close()
 
-	result, err := pacman.Sync(merged, cfg.NoCheck)
+	result, err := pacman.Sync(merged, cfg.NoCheck, cfg.Prune)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		return err
