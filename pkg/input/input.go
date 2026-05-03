@@ -31,6 +31,13 @@ func ReadPackages(stateFiles []string) (map[string]bool, error) {
 		}
 	}
 
+	implicitStateFile := getImplicitStateFile()
+	if fileExists(implicitStateFile) {
+		if err := readStateFile(implicitStateFile, packages); err != nil {
+			return nil, err
+		}
+	}
+
 	if err := readStdin(packages); err != nil {
 		return nil, err
 	}
@@ -50,6 +57,19 @@ func expandPath(path string) string {
 		return filepath.Join(home, path[2:])
 	}
 	return path
+}
+
+func fileExists(path string) bool {
+	_, err := os.Stat(path)
+	return err == nil
+}
+
+func getImplicitStateFile() string {
+	cfgDir, _ := os.UserConfigDir()
+	if cfgDir == "" {
+		cfgDir = "~/.config"
+	}
+	return filepath.Join(cfgDir, "declpac")
 }
 
 func normalizePackageName(name string) string {

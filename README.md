@@ -57,6 +57,11 @@ docker
 # this is a comment
 ```
 
+### Implicit State File
+
+If `$XDG_CONFIG_HOME/declpac` (or `~/.config/declpac` on fallback) exists, its
+contents are automatically included in the package list.
+
 ### Options
 
 | Flag | Alias | Description |
