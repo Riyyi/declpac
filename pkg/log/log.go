@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -41,6 +43,12 @@ func GetLogWriter() io.Writer {
 
 func Write(msg []byte) {
 	logFile.Write(msg)
+}
+
+func Command(name string, args ...string) *exec.Cmd {
+	cmdStr := name + " " + strings.Join(args, " ")
+	fmt.Fprintf(logFile, "[cmd] %s\n", cmdStr)
+	return exec.Command(name, args...)
 }
 
 func Close() error {
