@@ -22,32 +22,6 @@ type Fetcher struct {
 	aurClient  *aur.Client
 }
 
-func New() (*Fetcher, error) {
-	start := time.Now()
-	log.Debug("fetch.Fetcher New: starting...")
-
-	alpmHandle, err := alpm.New()
-	if err != nil {
-		return nil, err
-	}
-
-	aurClient := aur.New()
-
-	log.Debug("fetch.Fetcher New: done (%.2fs)", time.Since(start).Seconds())
-	return &Fetcher{
-		alpmHandle: alpmHandle,
-		aurClient:  aurClient,
-	}, nil
-}
-
-func (f *Fetcher) Close() error {
-	return f.alpmHandle.Release()
-}
-
-func (f *Fetcher) GetAURPackage(name string) (aur.Package, bool) {
-	return f.aurClient.Get(name)
-}
-
 func (f *Fetcher) BuildLocalPkgMap() (map[string]interface{}, error) {
 	localPkgs, err := f.alpmHandle.LocalPackages()
 	if err != nil {
@@ -58,6 +32,14 @@ func (f *Fetcher) BuildLocalPkgMap() (map[string]interface{}, error) {
 		result[k] = v
 	}
 	return result, nil
+}
+
+func (f *Fetcher) Close() error {
+	return f.alpmHandle.Release()
+}
+
+func (f *Fetcher) GetAURPackage(name string) (aur.Package, bool) {
+	return f.aurClient.Get(name)
 }
 
 func (f *Fetcher) Resolve(packages []string) (map[string]*PackageInfo, error) {
@@ -129,4 +111,22 @@ func (f *Fetcher) Resolve(packages []string) (map[string]*PackageInfo, error) {
 
 	log.Debug("fetch.Resolve: done (%.2fs)", time.Since(start).Seconds())
 	return result, nil
+}
+
+func New() (*Fetcher, error) {
+	start := time.Now()
+	log.Debug("fetch.Fetcher New: starting...")
+
+	alpmHandle, err := alpm.New()
+	if err != nil {
+		return nil, err
+	}
+
+	aurClient := aur.New()
+
+	log.Debug("fetch.Fetcher New: done (%.2fs)", time.Since(start).Seconds())
+	return &Fetcher{
+		alpmHandle: alpmHandle,
+		aurClient:  aurClient,
+	}, nil
 }

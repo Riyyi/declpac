@@ -15,101 +15,6 @@ type Result struct {
 	Removed   int
 }
 
-func SyncPackages(packages []string, logWriter io.Writer) error {
-	start := time.Now()
-	log.Debug("SyncPackages: starting...")
-
-	if logWriter == nil {
-		logWriter = os.Stderr
-	}
-
-	args := append([]string{"-S", "--needed", "--noconfirm"}, packages...)
-	cmd := log.Command("pacman", args...)
-	cmd.Stdout = logWriter
-	cmd.Stderr = logWriter
-	err := cmd.Run()
-	if err != nil {
-		return fmt.Errorf("pacman sync failed: %w", err)
-	}
-
-	log.Debug("SyncPackages: done (%.2fs)", time.Since(start).Seconds())
-	return nil
-}
-
-func RefreshDB(logWriter io.Writer) error {
-	start := time.Now()
-	log.Debug("RefreshDB: starting...")
-
-	if logWriter == nil {
-		logWriter = os.Stderr
-	}
-
-	cmd := log.Command("pacman", "-Syy")
-	cmd.Stdout = logWriter
-	cmd.Stderr = logWriter
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("failed to refresh pacman database: %w", err)
-	}
-
-	log.Debug("RefreshDB: done (%.2fs)", time.Since(start).Seconds())
-	return nil
-}
-
-func MarkAs(packages []string, flag string, logWriter io.Writer) error {
-	if len(packages) == 0 {
-		return nil
-	}
-	start := time.Now()
-	flagName := map[string]string{"deps": "asdeps", "explicit": "asexplicit"}[flag]
-	log.Debug("MarkAs(%s): starting...", flag)
-
-	if logWriter == nil {
-		logWriter = os.Stderr
-	}
-
-	args := append([]string{"-D", "--" + flagName}, packages...)
-	cmd := log.Command("pacman", args...)
-	cmd.Stdout = logWriter
-	cmd.Stderr = logWriter
-	err := cmd.Run()
-	if err != nil {
-		return fmt.Errorf("mark as %s failed: %w", flag, err)
-	}
-
-	log.Debug("MarkAs(%s): done (%.2fs)", flag, time.Since(start).Seconds())
-	return nil
-}
-
-func RemoveOrphans(orphans []string, logWriter io.Writer) (int, error) {
-	start := time.Now()
-	log.Debug("RemoveOrphans: starting...")
-
-	if logWriter == nil {
-		logWriter = os.Stderr
-	}
-
-	if len(orphans) == 0 {
-		log.Debug("RemoveOrphans: done (no orphans) (%.2fs)", time.Since(start).Seconds())
-		return 0, nil
-	}
-
-	args := make([]string, 0, 3+len(orphans))
-	args = append(args, "pacman", "-Rns", "--noconfirm")
-	args = append(args, orphans...)
-	removeCmd := log.Command(args[0], args[1:]...)
-	removeCmd.Stdout = logWriter
-	removeCmd.Stderr = logWriter
-	err := removeCmd.Run()
-	if err != nil {
-		return 0, fmt.Errorf("remove orphans failed: %w", err)
-	}
-
-	count := len(orphans)
-
-	log.Debug("RemoveOrphans: done (%d) (%.2fs)", count, time.Since(start).Seconds())
-	return count, nil
-}
-
 func InstallAUR(pkgName string, packageBase string, logWriter io.Writer) error {
 	start := time.Now()
 	log.Debug("InstallAUR: starting...")
@@ -165,6 +70,104 @@ func InstallAUR(pkgName string, packageBase string, logWriter io.Writer) error {
 
 	return nil
 }
+
+func MarkAs(packages []string, flag string, logWriter io.Writer) error {
+	if len(packages) == 0 {
+		return nil
+	}
+	start := time.Now()
+	flagName := map[string]string{"deps": "asdeps", "explicit": "asexplicit"}[flag]
+	log.Debug("MarkAs(%s): starting...", flag)
+
+	if logWriter == nil {
+		logWriter = os.Stderr
+	}
+
+	args := append([]string{"-D", "--" + flagName}, packages...)
+	cmd := log.Command("pacman", args...)
+	cmd.Stdout = logWriter
+	cmd.Stderr = logWriter
+	err := cmd.Run()
+	if err != nil {
+		return fmt.Errorf("mark as %s failed: %w", flag, err)
+	}
+
+	log.Debug("MarkAs(%s): done (%.2fs)", flag, time.Since(start).Seconds())
+	return nil
+}
+
+func RefreshDB(logWriter io.Writer) error {
+	start := time.Now()
+	log.Debug("RefreshDB: starting...")
+
+	if logWriter == nil {
+		logWriter = os.Stderr
+	}
+
+	cmd := log.Command("pacman", "-Syy")
+	cmd.Stdout = logWriter
+	cmd.Stderr = logWriter
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to refresh pacman database: %w", err)
+	}
+
+	log.Debug("RefreshDB: done (%.2fs)", time.Since(start).Seconds())
+	return nil
+}
+
+func RemoveOrphans(orphans []string, logWriter io.Writer) (int, error) {
+	start := time.Now()
+	log.Debug("RemoveOrphans: starting...")
+
+	if logWriter == nil {
+		logWriter = os.Stderr
+	}
+
+	if len(orphans) == 0 {
+		log.Debug("RemoveOrphans: done (no orphans) (%.2fs)", time.Since(start).Seconds())
+		return 0, nil
+	}
+
+	args := make([]string, 0, 3+len(orphans))
+	args = append(args, "pacman", "-Rns", "--noconfirm")
+	args = append(args, orphans...)
+	removeCmd := log.Command(args[0], args[1:]...)
+	removeCmd.Stdout = logWriter
+	removeCmd.Stderr = logWriter
+	err := removeCmd.Run()
+	if err != nil {
+		return 0, fmt.Errorf("remove orphans failed: %w", err)
+	}
+
+	count := len(orphans)
+
+	log.Debug("RemoveOrphans: done (%d) (%.2fs)", count, time.Since(start).Seconds())
+	return count, nil
+}
+
+func SyncPackages(packages []string, logWriter io.Writer) error {
+	start := time.Now()
+	log.Debug("SyncPackages: starting...")
+
+	if logWriter == nil {
+		logWriter = os.Stderr
+	}
+
+	args := append([]string{"-S", "--needed", "--noconfirm"}, packages...)
+	cmd := log.Command("pacman", args...)
+	cmd.Stdout = logWriter
+	cmd.Stderr = logWriter
+	err := cmd.Run()
+	if err != nil {
+		return fmt.Errorf("pacman sync failed: %w", err)
+	}
+
+	log.Debug("SyncPackages: done (%.2fs)", time.Since(start).Seconds())
+	return nil
+}
+
+// -----------------------------------------
+// private
 
 func findPKGFile(pkgName string, dir string) (string, error) {
 	entries, err := os.ReadDir(dir)

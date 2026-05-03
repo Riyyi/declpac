@@ -117,6 +117,9 @@ func Sync(packages []string, noCheck bool, prune bool) (*output.Result, error) {
 	}, nil
 }
 
+// -----------------------------------------
+// private
+
 func categorizePackages(f *fetch.Fetcher, packages []string) (pacmanPkgs, aurPkgs []string, err error) {
 	start := time.Now()
 	log.Debug("categorizePackages: starting...")
@@ -143,24 +146,6 @@ func categorizePackages(f *fetch.Fetcher, packages []string) (pacmanPkgs, aurPkg
 	return pacmanPkgs, aurPkgs, nil
 }
 
-func markAllAsDeps() error {
-	start := time.Now()
-	log.Debug("markAllAsDeps: starting...")
-
-	packages, err := read.List()
-	if err != nil || len(packages) == 0 {
-		return fmt.Errorf("failed to list packages: %w", err)
-	}
-
-	if err := sync.MarkAs(packages, "deps", log.GetLogWriter()); err != nil {
-		log.Write([]byte(fmt.Sprintf("error: %v\n", err)))
-		return err
-	}
-
-	log.Debug("markAllAsDeps: done (%.2fs)", time.Since(start).Seconds())
-	return nil
-}
-
 func cleanupOrphans() (int, error) {
 	start := time.Now()
 	log.Debug("cleanupOrphans: starting...")
@@ -179,4 +164,22 @@ func cleanupOrphans() (int, error) {
 
 	log.Debug("cleanupOrphans: done (%.2fs)", time.Since(start).Seconds())
 	return removed, nil
+}
+
+func markAllAsDeps() error {
+	start := time.Now()
+	log.Debug("markAllAsDeps: starting...")
+
+	packages, err := read.List()
+	if err != nil || len(packages) == 0 {
+		return fmt.Errorf("failed to list packages: %w", err)
+	}
+
+	if err := sync.MarkAs(packages, "deps", log.GetLogWriter()); err != nil {
+		log.Write([]byte(fmt.Sprintf("error: %v\n", err)))
+		return err
+	}
+
+	log.Debug("markAllAsDeps: done (%.2fs)", time.Since(start).Seconds())
+	return nil
 }

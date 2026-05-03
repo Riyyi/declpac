@@ -10,12 +10,21 @@ import (
 	"time"
 )
 
-// -----------------------------------------
-
 var logFile *os.File
 var Verbose bool
 
-// -----------------------------------------
+func Close() error {
+	if logFile == nil {
+		return nil
+	}
+	return logFile.Close()
+}
+
+func Command(name string, args ...string) *exec.Cmd {
+	cmdStr := name + " " + strings.Join(args, " ")
+	fmt.Fprintf(logFile, "[cmd] %s\n", cmdStr)
+	return exec.Command(name, args...)
+}
 
 func Debug(format string, args ...interface{}) {
 	if !Verbose {
@@ -24,7 +33,9 @@ func Debug(format string, args ...interface{}) {
 	fmt.Fprintf(os.Stderr, "[debug] "+format+"\n", args...)
 }
 
-// -----------------------------------------
+func GetLogWriter() io.Writer {
+	return logFile
+}
 
 func OpenLog() error {
 	logPath := filepath.Join("/var/log", "declpac.log")
@@ -37,28 +48,12 @@ func OpenLog() error {
 	return nil
 }
 
-func GetLogWriter() io.Writer {
-	return logFile
-}
-
 func Write(msg []byte) {
 	logFile.Write(msg)
 }
 
-func Command(name string, args ...string) *exec.Cmd {
-	cmdStr := name + " " + strings.Join(args, " ")
-	fmt.Fprintf(logFile, "[cmd] %s\n", cmdStr)
-	return exec.Command(name, args...)
-}
-
-func Close() error {
-	if logFile == nil {
-		return nil
-	}
-	return logFile.Close()
-}
-
 // -----------------------------------------
+// private
 
 func writeTimestamp() {
 	ts := time.Now().Format("2006-01-02 15:04:05")

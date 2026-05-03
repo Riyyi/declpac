@@ -19,6 +19,59 @@ type Handle struct {
 	syncDBs []dyalpm.Database
 }
 
+func (h *Handle) LocalPackages() (map[string]dyalpm.Package, error) {
+	start := time.Now()
+	log.Debug("LocalPackages: starting...")
+
+	localPkgs := make(map[string]dyalpm.Package)
+
+	err := h.localDB.PkgCache().ForEach(func(pkg dyalpm.Package) error {
+		localPkgs[pkg.Name()] = pkg
+		return nil
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to iterate local package cache: %w", err)
+	}
+
+	log.Debug("LocalPackages: done (%.2fs)", time.Since(start).Seconds())
+	return localPkgs, nil
+}
+
+func (h *Handle) Release() error {
+	if h.handle != nil {
+		h.handle.Release()
+	}
+	return nil
+}
+
+func (h *Handle) SyncPackages(pkgNames []string) (map[string]dyalpm.Package, error) {
+	start := time.Now()
+	log.Debug("SyncPackages: starting...")
+
+	syncPkgs := make(map[string]dyalpm.Package)
+	pkgSet := make(map[string]bool)
+	for _, name := range pkgNames {
+		pkgSet[name] = true
+	}
+
+	for _, db := range h.syncDBs {
+		err := db.PkgCache().ForEach(func(pkg dyalpm.Package) error {
+			if pkgSet[pkg.Name()] {
+				if _, exists := syncPkgs[pkg.Name()]; !exists {
+					syncPkgs[pkg.Name()] = pkg
+				}
+			}
+			return nil
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to iterate sync database %s: %w", db.Name(), err)
+		}
+	}
+
+	log.Debug("SyncPackages: done (%.2fs)", time.Since(start).Seconds())
+	return syncPkgs, nil
+}
+
 func New() (*Handle, error) {
 	start := time.Now()
 	log.Debug("alpm.New: starting...")
@@ -56,12 +109,8 @@ func New() (*Handle, error) {
 	}, nil
 }
 
-func (h *Handle) Release() error {
-	if h.handle != nil {
-		h.handle.Release()
-	}
-	return nil
-}
+// -----------------------------------------
+// private
 
 func registerSyncDBs(handle dyalpm.Handle) ([]dyalpm.Database, error) {
 	log.Debug("registerSyncDBs: starting...")
@@ -88,50 +137,4 @@ func registerSyncDBs(handle dyalpm.Handle) ([]dyalpm.Database, error) {
 
 	log.Debug("registerSyncDBs: done (%d dbs)", len(dbs))
 	return dbs, nil
-}
-
-func (h *Handle) LocalPackages() (map[string]dyalpm.Package, error) {
-	start := time.Now()
-	log.Debug("LocalPackages: starting...")
-
-	localPkgs := make(map[string]dyalpm.Package)
-
-	err := h.localDB.PkgCache().ForEach(func(pkg dyalpm.Package) error {
-		localPkgs[pkg.Name()] = pkg
-		return nil
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to iterate local package cache: %w", err)
-	}
-
-	log.Debug("LocalPackages: done (%.2fs)", time.Since(start).Seconds())
-	return localPkgs, nil
-}
-
-func (h *Handle) SyncPackages(pkgNames []string) (map[string]dyalpm.Package, error) {
-	start := time.Now()
-	log.Debug("SyncPackages: starting...")
-
-	syncPkgs := make(map[string]dyalpm.Package)
-	pkgSet := make(map[string]bool)
-	for _, name := range pkgNames {
-		pkgSet[name] = true
-	}
-
-	for _, db := range h.syncDBs {
-		err := db.PkgCache().ForEach(func(pkg dyalpm.Package) error {
-			if pkgSet[pkg.Name()] {
-				if _, exists := syncPkgs[pkg.Name()]; !exists {
-					syncPkgs[pkg.Name()] = pkg
-				}
-			}
-			return nil
-		})
-		if err != nil {
-			return nil, fmt.Errorf("failed to iterate sync database %s: %w", db.Name(), err)
-		}
-	}
-
-	log.Debug("SyncPackages: done (%.2fs)", time.Since(start).Seconds())
-	return syncPkgs, nil
 }
