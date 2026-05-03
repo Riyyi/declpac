@@ -35,6 +35,25 @@ func List() ([]string, error) {
 	return list, nil
 }
 
+func ExplicitList() ([]string, error) {
+	start := time.Now()
+	log.Debug("ExplicitList: starting...")
+
+	cmd := exec.Command("pacman", "-Qqe")
+	output, err := cmd.Output()
+	if err != nil {
+		return nil, err
+	}
+
+	list := strings.Split(strings.TrimSpace(string(output)), "\n")
+	if len(list) > 0 && list[0] == "" {
+		list = nil
+	}
+
+	log.Debug("ExplicitList: done (%.2fs)", time.Since(start).Seconds())
+	return list, nil
+}
+
 func ListOrphans() ([]string, error) {
 	start := time.Now()
 	log.Debug("ListOrphans: starting...")

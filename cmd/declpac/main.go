@@ -18,7 +18,7 @@ import (
 
 type Config struct {
 	StateFiles []string
-	NoConfirm  bool
+	NoCheck    bool
 	DryRun     bool
 	Verbose    bool
 }
@@ -35,6 +35,11 @@ func main() {
 				Aliases:     []string{"s"},
 				Usage:       "State file(s) to read package list from",
 				Destination: &cfg.StateFiles,
+			},
+			&cli.BoolFlag{
+				Name:        "nocheck",
+				Usage:       "Skip safety check",
+				Destination: &cfg.NoCheck,
 			},
 			&cli.BoolFlag{
 				Name:        "dry-run",
@@ -70,7 +75,11 @@ func run(cfg *Config) error {
 	}
 	log.Debug("run: packages read (%.2fs)", time.Since(start).Seconds())
 
-	merged := merge.Merge(packages)
+	merged, err := merge.Merge(packages)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+		return err
+	}
 
 	if cfg.DryRun {
 		result, err := read.DryRun(merged)
@@ -89,7 +98,7 @@ func run(cfg *Config) error {
 	}
 	defer log.Close()
 
-	result, err := pacman.Sync(merged)
+	result, err := pacman.Sync(merged, cfg.NoCheck)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		return err

@@ -13,9 +13,20 @@ import (
 	"github.com/Riyyi/declpac/pkg/pacman/sync"
 )
 
-func Sync(packages []string) (*output.Result, error) {
+func Sync(packages []string, noCheck bool) (*output.Result, error) {
 	start := time.Now()
 	log.Debug("Sync: starting...")
+
+	explicitList, err := read.ExplicitList()
+	if err != nil {
+		return nil, err
+	}
+	explicitCount := len(explicitList)
+
+	if !noCheck && len(packages) < explicitCount/2 {
+		errMsg := "safety check: state packages (%d) less than half of explicitly installed (%d), override with --nocheck"
+		return nil, fmt.Errorf(errMsg, len(packages), explicitCount)
+	}
 
 	list, err := read.List()
 	if err != nil {

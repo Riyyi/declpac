@@ -14,13 +14,13 @@ type Result struct {
 
 func Format(r *Result) string {
 	var b strings.Builder
-	b.WriteString(fmt.Sprintf("Installed %d packages, removed %d packages", r.Installed, r.Removed))
+	b.WriteString(fmt.Sprintf("installed %d packages, removed %d packages", r.Installed, r.Removed))
 	if len(r.ToInstall) > 0 {
-		b.WriteString("\nWould install: ")
+		b.WriteString("\nwould install: ")
 		b.WriteString(strings.Join(r.ToInstall, ", "))
 	}
 	if len(r.ToRemove) > 0 {
-		b.WriteString("\nWould remove: ")
+		b.WriteString("\nwould remove: ")
 		b.WriteString(strings.Join(r.ToRemove, ", "))
 	}
 	return b.String()

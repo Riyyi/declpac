@@ -61,7 +61,8 @@ docker
 
 | Flag | Alias | Description |
 |------|-------|-------------|
-| `--state` | `-s` | State file to read package list from (can be used multiple times) |
+| `--state` | `-s` | State file(s) to read package list from (can be used multiple times) |
+| `--nocheck` | | Skip safety check (allow significant package count reductions)
 | `--dry-run` | | Preview changes without applying them |
 | `--verbose` | `-v` | Enable verbose output |
 | `--help` | `-h` | Show help message |
