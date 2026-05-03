@@ -150,7 +150,7 @@ func InstallAUR(pkgName string, packageBase string, logWriter io.Writer) error {
 	}
 	log.Debug("InstallAUR: built (%.2fs)", time.Since(start).Seconds())
 
-	pkgFile, err := findPKGFile(tmpDir)
+	pkgFile, err := findPKGFile(pkgName, tmpDir)
 	if err != nil {
 		return fmt.Errorf("failed to find built package: %w", err)
 	}
@@ -166,16 +166,20 @@ func InstallAUR(pkgName string, packageBase string, logWriter io.Writer) error {
 	return nil
 }
 
-func findPKGFile(dir string) (string, error) {
+func findPKGFile(pkgName string, dir string) (string, error) {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
 		return "", err
 	}
 	for _, entry := range entries {
 		name := entry.Name()
-		if strings.HasSuffix(name, ".pkg.tar.zst") || strings.HasSuffix(name, ".pkg.tar.gz") {
-			return strings.Join([]string{dir, name}, "/"), nil
+		if !strings.HasSuffix(name, ".pkg.tar.zst") && !strings.HasSuffix(name, ".pkg.tar.gz") {
+			continue
 		}
+		if strings.HasPrefix(name, pkgName+"-debug") {
+			continue
+		}
+		return strings.Join([]string{dir, name}, "/"), nil
 	}
 	return "", fmt.Errorf("no package file found in %s", dir)
 }
