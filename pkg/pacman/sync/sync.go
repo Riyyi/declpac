@@ -191,6 +191,10 @@ func cloneRepo(sudoUser string, packageBase string, tmpDir string, logWriter io.
 }
 
 func createTempDir(sudoUser string, tmpDir string) error {
+	if tmpDir == "" || tmpDir == "/" || !strings.HasPrefix(tmpDir, "/tmp") {
+		return fmt.Errorf("safety check: prevented malformed rm -rf call")
+	}
+
 	mkdirCmd := log.Command("su", "-", sudoUser, "-c", "rm -rf "+tmpDir+" && mkdir -p "+tmpDir)
 	if err := mkdirCmd.Run(); err != nil {
 		return fmt.Errorf("failed to create temp directory: %w", err)
