@@ -1,4 +1,4 @@
-.PHONY: build fmt vet check githook install uninstall
+.PHONY: build fmt fmtcheck vet check githook install uninstall
 
 PKG := github.com/Riyyi/declpac
 BIN := declpac
@@ -15,6 +15,9 @@ build:
 	go build -o $(BUILD) ./cmd/declpac
 
 fmt:
+	@gofmt -w cmd pkg
+
+fmtcheck:
 	@if [ -z "$(STAGED_GO)" ]; then exit 0; fi; \
 	unformatted=$$(gofmt -l $(STAGED_GO)); \
 	if [ -n "$$unformatted" ]; then \
@@ -26,7 +29,7 @@ vet:
 	@if [ -z "$(STAGED_GO)" ]; then exit 0; fi; \
 	go vet $(STAGED_PKGS)
 
-check: fmt vet
+check: fmtcheck vet
 
 githook:
 	@mkdir -p .git/hooks
