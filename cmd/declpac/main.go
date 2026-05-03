@@ -10,7 +10,6 @@ import (
 
 	"github.com/Riyyi/declpac/pkg/input"
 	"github.com/Riyyi/declpac/pkg/log"
-	"github.com/Riyyi/declpac/pkg/merge"
 	"github.com/Riyyi/declpac/pkg/output"
 	"github.com/Riyyi/declpac/pkg/pacman"
 	"github.com/Riyyi/declpac/pkg/pacman/read"
@@ -75,7 +74,7 @@ func run(cfg *Config) error {
 	}
 	log.Debug("run: packages read (%.2fs)", time.Since(start).Seconds())
 
-	merged, err := merge.Merge(packages)
+	merged, err := input.Merge(packages)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		return err

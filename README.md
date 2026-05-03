@@ -115,7 +115,6 @@ declpac/
 │   └── main.go         # Entry point
 ├── pkg/
 │   ├── input/          # State file/stdin reading
-│   ├── merge/          # Package merging
 │   ├── fetch/          # Package resolution
 │   │   ├── aur/        # AUR support
 │   │   └── alpm/       # ALPM support
