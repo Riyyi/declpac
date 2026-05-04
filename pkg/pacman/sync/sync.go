@@ -215,6 +215,11 @@ func findPKGFile(pkgName string, dir string) (string, error) {
 		if !strings.HasSuffix(name, ".pkg.tar.zst") && !strings.HasSuffix(name, ".pkg.tar.gz") {
 			continue
 		}
+		// Skip packages that do not start with the exact package name, ex: sunshine-bin -> sunshine
+		if !strings.HasPrefix(name, pkgName) {
+			continue
+		}
+		// Skip packages that provide a debug package, ex: sunshine-bin -> sunshine-debug
 		if strings.HasPrefix(name, pkgName+"-debug") {
 			continue
 		}
