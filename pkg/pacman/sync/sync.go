@@ -268,17 +268,26 @@ func resolveAndInstallDeps(f *fetch.Fetcher, aurInfo *aur.Package, logWriter io.
 		return fmt.Errorf("failed to resolve dependencies: %w", err)
 	}
 
-	var aurDeps []string
+	var repoDeps, aurDeps []string
 	for _, dep := range depends {
 		info := resolved[dep]
 		if info.Installed {
 			continue
 		}
-		if info.Exists {
-			continue
+		pkg := dep
+		if info.Provided != "" {
+			pkg = info.Provided
 		}
-		if info.InAUR {
-			aurDeps = append(aurDeps, dep)
+		if info.Exists {
+			repoDeps = append(repoDeps, pkg)
+		} else if info.InAUR {
+			aurDeps = append(aurDeps, pkg)
+		}
+	}
+
+	if len(repoDeps) > 0 {
+		if err := SyncPackages(repoDeps, logWriter); err != nil {
+			return fmt.Errorf("failed to install repo dependencies: %w", err)
 		}
 	}
 
