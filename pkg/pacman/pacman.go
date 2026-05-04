@@ -84,6 +84,12 @@ func Sync(packages []string, noCheck bool, prune bool) (*output.Result, error) {
 
 	var removed int
 	if prune {
+		log.Debug("Sync: running prune sanity check...")
+		if err := pruneSanityCheck(packages); err != nil {
+			return nil, err
+		}
+		log.Debug("Sync: prune sanity check passed (%.2fs)", time.Since(start).Seconds())
+
 		log.Debug("Sync: marking all as deps...")
 		if err := markAllAsDeps(); err != nil {
 			return nil, err
@@ -181,5 +187,31 @@ func markAllAsDeps() error {
 	}
 
 	log.Debug("markAllAsDeps: done (%.2fs)", time.Since(start).Seconds())
+	return nil
+}
+
+// pruneSanityCheck checks if the installation of all state packages succeeded,
+// before attempting to do package marking and orphan cleanup.
+func pruneSanityCheck(statePackages []string) error {
+	start := time.Now()
+	log.Debug("pruneSanityCheck: starting...")
+
+	localPackages, err := read.List()
+	if err != nil {
+		return fmt.Errorf("failed to list local packages: %w", err)
+	}
+
+	var missing []string
+	for _, pkg := range statePackages {
+		if !slices.Contains(localPackages, pkg) {
+			missing = append(missing, pkg)
+		}
+	}
+
+	if len(missing) > 0 {
+		return fmt.Errorf("safety check: missing state packages: %v", missing)
+	}
+
+	log.Debug("pruneSanityCheck: done (%.2fs)", time.Since(start).Seconds())
 	return nil
 }
