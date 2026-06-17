@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Riyyi/declpac/pkg/fetch"
+	"github.com/Riyyi/declpac/pkg/pacman/fetch"
 	"github.com/Riyyi/declpac/pkg/log"
 	"github.com/Riyyi/declpac/pkg/output"
 )

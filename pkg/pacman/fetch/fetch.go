@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/Riyyi/declpac/pkg/fetch/alpm"
-	"github.com/Riyyi/declpac/pkg/fetch/aur"
+	"github.com/Riyyi/declpac/pkg/pacman/fetch/alpm"
+	"github.com/Riyyi/declpac/pkg/pacman/fetch/aur"
 	"github.com/Riyyi/declpac/pkg/log"
 )
 

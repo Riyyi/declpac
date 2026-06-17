@@ -24,7 +24,7 @@ type Backend interface {
 	InstallPackages(pkgs []PackageInfo, logWriter io.Writer) error
 	RemoveOrphans(orphans []string, logWriter io.Writer) (int, error)
 	MarkAs(packages []string, flag string, logWriter io.Writer) error
-	Prune(logWriter io.Writer) (int, error)
+	Prune(statePackages []string, logWriter io.Writer) (int, error)
 }
 
 type PackageInfo struct {

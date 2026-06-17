@@ -20,7 +20,7 @@ func (m *mockBackend) RefreshDB(io.Writer) error                    { return nil
 func (m *mockBackend) InstallPackages([]PackageInfo, io.Writer) error { return nil }
 func (m *mockBackend) RemoveOrphans([]string, io.Writer) (int, error) { return 0, nil }
 func (m *mockBackend) MarkAs([]string, string, io.Writer) error      { return nil }
-func (m *mockBackend) Prune(io.Writer) (int, error)                 { return 0, nil }
+func (m *mockBackend) Prune([]string, io.Writer) (int, error)              { return 0, nil }
 
 // -----------------------------------------
 // Private functions
