@@ -37,8 +37,8 @@ func (ct *callTracker) indexOf(name string) int {
 }
 
 type configurableBackend struct {
-	tracker        *callTracker
-	resolveFn      func([]string) ([]PackageInfo, error)
+	tracker         *callTracker
+	resolveFn       func([]string) ([]PackageInfo, error)
 	listFn          func() ([]string, error)
 	listExplicitFn  func() ([]string, error)
 	listOrphansFn   func() ([]string, error)
@@ -49,24 +49,45 @@ type configurableBackend struct {
 	pruneFn         func([]string, io.Writer) (int, error)
 }
 
-func (b *configurableBackend) Name() string                                  { return "configurable" }
-func (b *configurableBackend) Resolve(pkgs []string) ([]PackageInfo, error) { b.tracker.record("Resolve"); return b.resolveFn(pkgs) }
-func (b *configurableBackend) List() ([]string, error)                       { b.tracker.record("List"); return b.listFn() }
-func (b *configurableBackend) ListExplicit() ([]string, error)              { b.tracker.record("ListExplicit"); return b.listExplicitFn() }
-func (b *configurableBackend) ListOrphans() ([]string, error)               { b.tracker.record("ListOrphans"); return b.listOrphansFn() }
-func (b *configurableBackend) RefreshDB(w io.Writer) error                   { b.tracker.record("RefreshDB"); return b.refreshDBFn(w) }
+func (b *configurableBackend) Name() string { return "configurable" }
+
+func (b *configurableBackend) Resolve(pkgs []string) ([]PackageInfo, error) {
+	b.tracker.record("Resolve")
+	return b.resolveFn(pkgs)
+}
+
+func (b *configurableBackend) List() ([]string, error) { b.tracker.record("List"); return b.listFn() }
+
+func (b *configurableBackend) ListExplicit() ([]string, error) {
+	b.tracker.record("ListExplicit")
+	return b.listExplicitFn()
+}
+
+func (b *configurableBackend) ListOrphans() ([]string, error) {
+	b.tracker.record("ListOrphans")
+	return b.listOrphansFn()
+}
+
+func (b *configurableBackend) RefreshDB(w io.Writer) error {
+	b.tracker.record("RefreshDB")
+	return b.refreshDBFn(w)
+}
+
 func (b *configurableBackend) InstallPackages(pkgs []PackageInfo, w io.Writer) error {
 	b.tracker.record("InstallPackages")
 	return b.installPkgsFn(pkgs, w)
 }
+
 func (b *configurableBackend) RemoveOrphans(orphs []string, w io.Writer) (int, error) {
 	b.tracker.record("RemoveOrphans")
 	return b.removeOrphansFn(orphs, w)
 }
+
 func (b *configurableBackend) MarkAs(pkgs []string, flag string, w io.Writer) error {
 	b.tracker.record("MarkAs")
 	return b.markAsFn(pkgs, flag, w)
 }
+
 func (b *configurableBackend) Prune(statePkgs []string, w io.Writer) (int, error) {
 	b.tracker.record("Prune")
 	return b.pruneFn(statePkgs, w)
@@ -114,35 +135,41 @@ func saveAndRestore(t *testing.T) func() {
 // Tests — Auto-detection
 
 func TestNewNeitherFound(t *testing.T) {
+	// Arrange
 	restore := saveAndRestore(t)
 	defer restore()
-
 	lookPath = notFoundLookPath
 
+	// Act
 	_, err := New()
+
+	// Verify
 	if err == nil {
 		t.Fatal("expected error when no package manager on PATH")
 	}
 }
 
 func TestNewBothFound(t *testing.T) {
+	// Arrange
 	restore := saveAndRestore(t)
 	defer restore()
-
 	lookPath = func(name string) (string, error) {
 		return "/usr/bin/" + name, nil
 	}
 
+	// Act
 	_, err := New()
+
+	// Verify
 	if err == nil {
 		t.Fatal("expected error when both package managers on PATH")
 	}
 }
 
 func TestNewPacmanOnly(t *testing.T) {
+	// Arrange
 	restore := saveAndRestore(t)
 	defer restore()
-
 	lookPath = func(name string) (string, error) {
 		if name == "pacman" {
 			return "/usr/bin/pacman", nil
@@ -151,7 +178,10 @@ func TestNewPacmanOnly(t *testing.T) {
 	}
 	Register("pacman", func() Backend { return &mockBackend{} })
 
+	// Act
 	b, err := New()
+
+	// Verify
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -161,9 +191,9 @@ func TestNewPacmanOnly(t *testing.T) {
 }
 
 func TestNewDnfOnly(t *testing.T) {
+	// Arrange
 	restore := saveAndRestore(t)
 	defer restore()
-
 	lookPath = func(name string) (string, error) {
 		if name == "dnf" {
 			return "/usr/bin/dnf", nil
@@ -172,7 +202,10 @@ func TestNewDnfOnly(t *testing.T) {
 	}
 	Register("dnf", func() Backend { return &mockBackend{} })
 
+	// Act
 	b, err := New()
+
+	// Verify
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -182,9 +215,9 @@ func TestNewDnfOnly(t *testing.T) {
 }
 
 func TestNewNotRegistered(t *testing.T) {
+	// Arrange
 	restore := saveAndRestore(t)
 	defer restore()
-
 	lookPath = func(name string) (string, error) {
 		if name == "pacman" {
 			return "/usr/bin/pacman", nil
@@ -192,7 +225,10 @@ func TestNewNotRegistered(t *testing.T) {
 		return "", errors.New("not found")
 	}
 
+	// Act
 	_, err := New()
+
+	// Verify
 	if err == nil {
 		t.Fatal("expected error when backend not registered")
 	}
@@ -202,6 +238,7 @@ func TestNewNotRegistered(t *testing.T) {
 // Tests — DryRun orchestration
 
 func TestDryRunInstallAndRemove(t *testing.T) {
+	// Arrange
 	tracker := &callTracker{}
 	b := &configurableBackend{
 		tracker: tracker,
@@ -217,7 +254,10 @@ func TestDryRunInstallAndRemove(t *testing.T) {
 		},
 	}
 
+	// Act
 	result, err := DryRun(b, []string{"vim", "neovim", "git"})
+
+	// Verify
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -244,6 +284,7 @@ func TestDryRunInstallAndRemove(t *testing.T) {
 }
 
 func TestDryRunEmptyPackages(t *testing.T) {
+	// Arrange
 	b := &configurableBackend{
 		tracker: &callTracker{},
 		resolveFn: func(pkgs []string) ([]PackageInfo, error) {
@@ -254,7 +295,10 @@ func TestDryRunEmptyPackages(t *testing.T) {
 		},
 	}
 
+	// Act
 	result, err := DryRun(b, nil)
+
+	// Verify
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -267,6 +311,7 @@ func TestDryRunEmptyPackages(t *testing.T) {
 }
 
 func TestDryRunResolveError(t *testing.T) {
+	// Arrange
 	b := &configurableBackend{
 		tracker: &callTracker{},
 		resolveFn: func(pkgs []string) ([]PackageInfo, error) {
@@ -274,13 +319,17 @@ func TestDryRunResolveError(t *testing.T) {
 		},
 	}
 
+	// Act
 	_, err := DryRun(b, []string{"vim"})
+
+	// Verify
 	if err == nil {
 		t.Fatal("expected error from Resolve failure")
 	}
 }
 
 func TestDryRunListOrphansError(t *testing.T) {
+	// Arrange
 	b := &configurableBackend{
 		tracker: &callTracker{},
 		resolveFn: func(pkgs []string) ([]PackageInfo, error) {
@@ -291,13 +340,17 @@ func TestDryRunListOrphansError(t *testing.T) {
 		},
 	}
 
+	// Act
 	_, err := DryRun(b, []string{"vim"})
+
+	// Verify
 	if err == nil {
 		t.Fatal("expected error from ListOrphans failure")
 	}
 }
 
 func TestDryRunOrphansNotInStatePackages(t *testing.T) {
+	// Arrange
 	b := &configurableBackend{
 		tracker: &callTracker{},
 		resolveFn: func(pkgs []string) ([]PackageInfo, error) {
@@ -310,7 +363,10 @@ func TestDryRunOrphansNotInStatePackages(t *testing.T) {
 		},
 	}
 
+	// Act
 	result, err := DryRun(b, []string{"vim"})
+
+	// Verify
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -327,6 +383,7 @@ func TestDryRunOrphansNotInStatePackages(t *testing.T) {
 // Tests — Sync orchestration
 
 func TestSyncSafetyCheckFails(t *testing.T) {
+	// Arrange
 	b := &configurableBackend{
 		tracker: &callTracker{},
 		listExplicitFn: func() ([]string, error) {
@@ -334,7 +391,10 @@ func TestSyncSafetyCheckFails(t *testing.T) {
 		},
 	}
 
+	// Act
 	_, err := Sync(b, []string{"vim"}, false, false)
+
+	// Verify
 	if err == nil {
 		t.Fatal("expected safety check error")
 	}
@@ -344,6 +404,7 @@ func TestSyncSafetyCheckFails(t *testing.T) {
 }
 
 func TestSyncSafetyCheckSkippedWithNoCheck(t *testing.T) {
+	// Arrange
 	tracker := &callTracker{}
 	b := &configurableBackend{
 		tracker: tracker,
@@ -353,18 +414,22 @@ func TestSyncSafetyCheckSkippedWithNoCheck(t *testing.T) {
 		listFn: func() ([]string, error) {
 			return []string{"vim"}, nil
 		},
-		refreshDBFn:     noOpFn(),
-		resolveFn:       func(pkgs []string) ([]PackageInfo, error) { return nil, nil },
-		installPkgsFn:   noOpInstallFn(),
+		refreshDBFn:   noOpFn(),
+		resolveFn:     func(pkgs []string) ([]PackageInfo, error) { return nil, nil },
+		installPkgsFn: noOpInstallFn(),
 	}
 
+	// Act
 	_, err := Sync(b, []string{"vim"}, true, false)
+
+	// Verify
 	if err != nil {
 		t.Fatalf("unexpected error with noCheck: %v", err)
 	}
 }
 
 func TestSyncPruneSanityCheckFails(t *testing.T) {
+	// Arrange
 	tracker := &callTracker{}
 	b := &configurableBackend{
 		tracker: tracker,
@@ -377,13 +442,16 @@ func TestSyncPruneSanityCheckFails(t *testing.T) {
 			}
 			return []string{"otherpkg"}, nil
 		},
-		refreshDBFn:     noOpFn(),
-		resolveFn:       func(pkgs []string) ([]PackageInfo, error) { return nil, nil },
-		installPkgsFn:   noOpInstallFn(),
-		pruneFn:         noOpPruneFn(),
+		refreshDBFn:   noOpFn(),
+		resolveFn:     func(pkgs []string) ([]PackageInfo, error) { return nil, nil },
+		installPkgsFn: noOpInstallFn(),
+		pruneFn:       noOpPruneFn(),
 	}
 
+	// Act
 	_, err := Sync(b, []string{"missingpkg"}, true, true)
+
+	// Verify
 	if err == nil {
 		t.Fatal("expected prune sanity check error")
 	}
@@ -393,6 +461,7 @@ func TestSyncPruneSanityCheckFails(t *testing.T) {
 }
 
 func TestSyncCallOrder(t *testing.T) {
+	// Arrange
 	tracker := &callTracker{}
 	b := &configurableBackend{
 		tracker: tracker,
@@ -402,16 +471,18 @@ func TestSyncCallOrder(t *testing.T) {
 		listFn: func() ([]string, error) {
 			return []string{"vim", "git"}, nil
 		},
-		refreshDBFn:     noOpFn(),
-		resolveFn:       func(pkgs []string) ([]PackageInfo, error) { return nil, nil },
-		installPkgsFn:   noOpInstallFn(),
+		refreshDBFn:   noOpFn(),
+		resolveFn:     func(pkgs []string) ([]PackageInfo, error) { return nil, nil },
+		installPkgsFn: noOpInstallFn(),
 	}
 
+	// Act
 	_, err := Sync(b, []string{"vim"}, true, false)
+
+	// Verify
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-
 	expectedOrder := []string{"ListExplicit", "List", "RefreshDB", "Resolve", "InstallPackages"}
 	if len(tracker.calls) < len(expectedOrder) {
 		t.Fatalf("expected at least %d calls, got %d", len(expectedOrder), len(tracker.calls))
@@ -424,6 +495,7 @@ func TestSyncCallOrder(t *testing.T) {
 }
 
 func TestSyncWithPrune(t *testing.T) {
+	// Arrange
 	tracker := &callTracker{}
 	b := &configurableBackend{
 		tracker: tracker,
@@ -439,7 +511,10 @@ func TestSyncWithPrune(t *testing.T) {
 		pruneFn:       noOpPruneFn(),
 	}
 
+	// Act
 	result, err := Sync(b, []string{"vim"}, true, true)
+
+	// Verify
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -453,6 +528,7 @@ func TestSyncWithPrune(t *testing.T) {
 }
 
 func TestSyncResolveError(t *testing.T) {
+	// Arrange
 	b := &configurableBackend{
 		tracker: &callTracker{},
 		listExplicitFn: func() ([]string, error) {
@@ -467,13 +543,17 @@ func TestSyncResolveError(t *testing.T) {
 		},
 	}
 
+	// Act
 	_, err := Sync(b, []string{"vim"}, true, false)
+
+	// Verify
 	if err == nil {
 		t.Fatal("expected error from Resolve failure")
 	}
 }
 
 func TestSyncInstallError(t *testing.T) {
+	// Arrange
 	b := &configurableBackend{
 		tracker: &callTracker{},
 		listExplicitFn: func() ([]string, error) {
@@ -489,7 +569,10 @@ func TestSyncInstallError(t *testing.T) {
 		},
 	}
 
+	// Act
 	_, err := Sync(b, []string{"vim"}, true, false)
+
+	// Verify
 	if err == nil {
 		t.Fatal("expected error from InstallPackages failure")
 	}
@@ -499,6 +582,7 @@ func TestSyncInstallError(t *testing.T) {
 // Tests — Prune sanity check
 
 func TestPruneSanityCheckMissingPackages(t *testing.T) {
+	// Arrange
 	b := &configurableBackend{
 		tracker: &callTracker{},
 		listFn: func() ([]string, error) {
@@ -506,7 +590,10 @@ func TestPruneSanityCheckMissingPackages(t *testing.T) {
 		},
 	}
 
+	// Act
 	err := pruneSanityCheck(b, []string{"vim", "git"})
+
+	// Verify
 	if err == nil {
 		t.Fatal("expected error for missing packages")
 	}
@@ -516,6 +603,7 @@ func TestPruneSanityCheckMissingPackages(t *testing.T) {
 }
 
 func TestPruneSanityCheckAllPresent(t *testing.T) {
+	// Arrange
 	b := &configurableBackend{
 		tracker: &callTracker{},
 		listFn: func() ([]string, error) {
@@ -523,7 +611,10 @@ func TestPruneSanityCheckAllPresent(t *testing.T) {
 		},
 	}
 
+	// Act
 	err := pruneSanityCheck(b, []string{"vim", "git"})
+
+	// Verify
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -533,13 +624,13 @@ func TestPruneSanityCheckAllPresent(t *testing.T) {
 
 type mockBackend struct{}
 
-func (m *mockBackend) Name() string                                        { return "mock" }
-func (m *mockBackend) Resolve([]string) ([]PackageInfo, error)             { return nil, nil }
-func (m *mockBackend) List() ([]string, error)                             { return nil, nil }
-func (m *mockBackend) ListExplicit() ([]string, error)                     { return nil, nil }
-func (m *mockBackend) ListOrphans() ([]string, error)                      { return nil, nil }
-func (m *mockBackend) RefreshDB(io.Writer) error                           { return nil }
-func (m *mockBackend) InstallPackages([]PackageInfo, io.Writer) error      { return nil }
-func (m *mockBackend) RemoveOrphans([]string, io.Writer) (int, error)      { return 0, nil }
-func (m *mockBackend) MarkAs([]string, string, io.Writer) error            { return nil }
-func (m *mockBackend) Prune([]string, io.Writer) (int, error)             { return 0, nil }
+func (m *mockBackend) Name() string                                   { return "mock" }
+func (m *mockBackend) Resolve([]string) ([]PackageInfo, error)        { return nil, nil }
+func (m *mockBackend) List() ([]string, error)                        { return nil, nil }
+func (m *mockBackend) ListExplicit() ([]string, error)                { return nil, nil }
+func (m *mockBackend) ListOrphans() ([]string, error)                 { return nil, nil }
+func (m *mockBackend) RefreshDB(io.Writer) error                      { return nil }
+func (m *mockBackend) InstallPackages([]PackageInfo, io.Writer) error { return nil }
+func (m *mockBackend) RemoveOrphans([]string, io.Writer) (int, error) { return 0, nil }
+func (m *mockBackend) MarkAs([]string, string, io.Writer) error       { return nil }
+func (m *mockBackend) Prune([]string, io.Writer) (int, error)         { return 0, nil }

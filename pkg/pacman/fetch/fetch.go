@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/Riyyi/declpac/pkg/log"
 	"github.com/Riyyi/declpac/pkg/pacman/fetch/alpm"
 	"github.com/Riyyi/declpac/pkg/pacman/fetch/aur"
-	"github.com/Riyyi/declpac/pkg/log"
 )
 
 type PackageInfo struct {

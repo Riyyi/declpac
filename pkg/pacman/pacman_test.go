@@ -14,8 +14,14 @@ func TestPacmanSatisfiesBackend(t *testing.T) {
 }
 
 func TestPacmanName(t *testing.T) {
+	// Arrange
 	p := New()
-	if p.Name() != "pacman" {
-		t.Errorf("Name() = %q, want %q", p.Name(), "pacman")
+
+	// Act
+	name := p.Name()
+
+	// Verify
+	if name != "pacman" {
+		t.Errorf("Name() = %q, want %q", name, "pacman")
 	}
 }

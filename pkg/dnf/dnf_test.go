@@ -14,16 +14,24 @@ func TestDnfSatisfiesBackend(t *testing.T) {
 }
 
 func TestDnfName(t *testing.T) {
+	// Arrange
 	d := &Dnf{}
-	if d.Name() != "dnf" {
-		t.Errorf("Name() = %q, want %q", d.Name(), "dnf")
+
+	// Act
+	name := d.Name()
+
+	// Verify
+	if name != "dnf" {
+		t.Errorf("Name() = %q, want %q", name, "dnf")
 	}
 }
 
 func TestDnfUnimplementedMethods(t *testing.T) {
+	// Arrange
 	d := &Dnf{}
 	pkgs := []backend.PackageInfo{{Name: "test"}}
 
+	// Act + Verify
 	if _, err := d.Resolve([]string{"test"}); err == nil {
 		t.Error("Resolve should return error")
 	}

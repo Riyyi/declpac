@@ -9,9 +9,9 @@ import (
 	"time"
 
 	"github.com/Riyyi/declpac/pkg/auth"
+	"github.com/Riyyi/declpac/pkg/log"
 	"github.com/Riyyi/declpac/pkg/pacman/fetch"
 	"github.com/Riyyi/declpac/pkg/pacman/fetch/aur"
-	"github.com/Riyyi/declpac/pkg/log"
 )
 
 // -----------------------------------------
