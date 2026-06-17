@@ -14,13 +14,8 @@ import (
 	"github.com/Riyyi/declpac/pkg/log"
 )
 
-type Result struct {
-	Installed int
-	Removed   int
-}
-
 // -----------------------------------------
-// public
+// Public
 
 func InstallAUR(f *fetch.Fetcher, pkgName string, packageBase string, asDeps bool, logWriter io.Writer) error {
 	start := time.Now()
@@ -160,7 +155,7 @@ func SyncPackages(packages []string, logWriter io.Writer) error {
 }
 
 // -----------------------------------------
-// private
+// Private
 
 func buildPackage(tmpDir string, asDeps bool, logWriter io.Writer) error {
 	makepkgArgs := []string{"-D", tmpDir, "-s", "--noconfirm"}
