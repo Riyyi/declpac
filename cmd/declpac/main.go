@@ -9,11 +9,13 @@ import (
 	"github.com/urfave/cli/v3"
 
 	"github.com/Riyyi/declpac/pkg/auth"
+	"github.com/Riyyi/declpac/pkg/backend"
 	"github.com/Riyyi/declpac/pkg/input"
 	"github.com/Riyyi/declpac/pkg/log"
 	"github.com/Riyyi/declpac/pkg/output"
-	"github.com/Riyyi/declpac/pkg/pacman"
-	"github.com/Riyyi/declpac/pkg/pacman/read"
+
+	_ "github.com/Riyyi/declpac/pkg/dnf"
+	_ "github.com/Riyyi/declpac/pkg/pacman"
 )
 
 type Config struct {
@@ -29,7 +31,7 @@ func main() {
 
 	cmd := &cli.Command{
 		Name:  "declpac",
-		Usage: "Declarative pacman package manager",
+		Usage: "Declarative package manager",
 		Flags: []cli.Flag{
 			&cli.StringSliceFlag{
 				Name:        "state",
@@ -74,6 +76,12 @@ func run(cfg *Config) error {
 	start := time.Now()
 	log.Debug("run: starting...")
 
+	b, err := backend.New()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+		return err
+	}
+
 	packages, err := input.ReadPackages(cfg.StateFiles)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
@@ -88,7 +96,7 @@ func run(cfg *Config) error {
 	}
 
 	if cfg.DryRun {
-		result, err := read.DryRun(merged)
+		result, err := backend.DryRun(b, merged)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "error: %v\n", err)
 			return err
@@ -106,7 +114,7 @@ func run(cfg *Config) error {
 	}
 	defer log.Close()
 
-	result, err := pacman.Sync(merged, cfg.NoCheck, cfg.Prune)
+	result, err := backend.Sync(b, merged, cfg.NoCheck, cfg.Prune)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		return err
