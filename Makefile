@@ -1,4 +1,4 @@
-.PHONY: build fmt fmtcheck vet check githook install uninstall
+.PHONY: build fmt fmtcheck vet check githook install uninstall test
 
 PKG := github.com/Riyyi/declpac
 BIN := declpac
@@ -30,6 +30,9 @@ vet:
 	go vet $(STAGED_PKGS)
 
 check: fmtcheck vet
+
+test:
+	go test ./pkg/...
 
 githook:
 	@mkdir -p .git/hooks

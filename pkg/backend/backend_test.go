@@ -27,15 +27,6 @@ func (ct *callTracker) has(name string) bool {
 	return false
 }
 
-func (ct *callTracker) indexOf(name string) int {
-	for i, c := range ct.calls {
-		if c == name {
-			return i
-		}
-	}
-	return -1
-}
-
 type configurableBackend struct {
 	tracker         *callTracker
 	resolveFn       func([]string) ([]PackageInfo, error)
@@ -97,12 +88,8 @@ func noOpFn() func(io.Writer) error {
 	return func(io.Writer) error { return nil }
 }
 
-func noOpIntFn() func([]string, io.Writer) (int, error) {
-	return func([]string, io.Writer) (int, error) { return 0, nil }
-}
-
-func noOpMarkAsFn() func([]string, string, io.Writer) error {
-	return func([]string, string, io.Writer) error { return nil }
+func noOpResolveFn() func([]string) ([]PackageInfo, error) {
+	return func([]string) ([]PackageInfo, error) { return nil, nil }
 }
 
 func noOpPruneFn() func([]string, io.Writer) (int, error) {
@@ -250,7 +237,7 @@ func TestDryRunInstallAndRemove(t *testing.T) {
 			}, nil
 		},
 		listOrphansFn: func() ([]string, error) {
-			return []string{"orphan1", "orphan2"}, nil
+			return []string{"orphan1", "orphan2", "orphan3"}, nil
 		},
 	}
 
@@ -265,14 +252,14 @@ func TestDryRunInstallAndRemove(t *testing.T) {
 	if result.Installed != 2 {
 		t.Errorf("Installed = %d, want 2", result.Installed)
 	}
-	if result.Removed != 2 {
-		t.Errorf("Removed = %d, want 2", result.Removed)
+	if result.Removed != 3 {
+		t.Errorf("Removed = %d, want 3", result.Removed)
 	}
 	if len(result.ToInstall) != 2 {
 		t.Errorf("ToInstall = %v, want 2 items", result.ToInstall)
 	}
-	if len(result.ToRemove) != 2 {
-		t.Errorf("ToRemove = %v, want 2 items", result.ToRemove)
+	if len(result.ToRemove) != 3 {
+		t.Errorf("ToRemove = %v, want 3 items", result.ToRemove)
 	}
 
 	if !tracker.has("Resolve") {
@@ -415,7 +402,7 @@ func TestSyncSafetyCheckSkippedWithNoCheck(t *testing.T) {
 			return []string{"vim"}, nil
 		},
 		refreshDBFn:   noOpFn(),
-		resolveFn:     func(pkgs []string) ([]PackageInfo, error) { return nil, nil },
+		resolveFn:     noOpResolveFn(),
 		installPkgsFn: noOpInstallFn(),
 	}
 
@@ -437,13 +424,10 @@ func TestSyncPruneSanityCheckFails(t *testing.T) {
 			return []string{"vim"}, nil
 		},
 		listFn: func() ([]string, error) {
-			if tracker.has("List") && len(tracker.calls) > 1 {
-				return []string{"otherpkg"}, nil
-			}
 			return []string{"otherpkg"}, nil
 		},
 		refreshDBFn:   noOpFn(),
-		resolveFn:     func(pkgs []string) ([]PackageInfo, error) { return nil, nil },
+		resolveFn:     noOpResolveFn(),
 		installPkgsFn: noOpInstallFn(),
 		pruneFn:       noOpPruneFn(),
 	}
@@ -472,7 +456,7 @@ func TestSyncCallOrder(t *testing.T) {
 			return []string{"vim", "git"}, nil
 		},
 		refreshDBFn:   noOpFn(),
-		resolveFn:     func(pkgs []string) ([]PackageInfo, error) { return nil, nil },
+		resolveFn:     noOpResolveFn(),
 		installPkgsFn: noOpInstallFn(),
 	}
 
@@ -506,9 +490,9 @@ func TestSyncWithPrune(t *testing.T) {
 			return []string{"vim", "git"}, nil
 		},
 		refreshDBFn:   noOpFn(),
-		resolveFn:     func(pkgs []string) ([]PackageInfo, error) { return nil, nil },
+		resolveFn:     noOpResolveFn(),
 		installPkgsFn: noOpInstallFn(),
-		pruneFn:       noOpPruneFn(),
+		pruneFn:       func([]string, io.Writer) (int, error) { return 1, nil },
 	}
 
 	// Act
@@ -522,8 +506,8 @@ func TestSyncWithPrune(t *testing.T) {
 	if !tracker.has("Prune") {
 		t.Error("expected Prune to be called")
 	}
-	if result.Removed != 0 {
-		t.Errorf("Removed = %d, want 0", result.Removed)
+	if result.Removed != 1 {
+		t.Errorf("Removed = %d, want 1", result.Removed)
 	}
 }
 
@@ -563,7 +547,7 @@ func TestSyncInstallError(t *testing.T) {
 			return []string{"vim"}, nil
 		},
 		refreshDBFn: noOpFn(),
-		resolveFn:   func(pkgs []string) ([]PackageInfo, error) { return nil, nil },
+		resolveFn:   noOpResolveFn(),
 		installPkgsFn: func([]PackageInfo, io.Writer) error {
 			return errors.New("install failed")
 		},
